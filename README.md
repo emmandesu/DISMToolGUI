@@ -1,4 +1,6 @@
-![image](https://github.com/user-attachments/assets/b6b5a4e6-4cba-4e67-aba9-27e93c54e622)# 🛠️ DISM Tool GUI
+![image](https://github.com/user-attachments/assets/b6b5a4e6-4cba-4e67-aba9-27e93c54e622)
+
+# 🛠️ DISM Tool GUI
 
 **DISM Tool GUI** is a modern, user-friendly graphical interface for executing **DISM** and **SFC** commands on Windows. It allows IT professionals and power users to manage images, add/remove packages, run repairs, and monitor progress live — all without the command line.
 
