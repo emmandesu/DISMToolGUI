@@ -1,0 +1,119 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>DismToolGui</RootNamespace>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<Authors>Emmanuel Flores</Authors>
+	<Company>EMFLO</Company>
+	<AssemblyOriginatorKeyFile>DismToolCert.pfx</AssemblyOriginatorKeyFile>
+	<DelaySign>False</DelaySign>
+	<LangVersion>latest</LangVersion>
+	<ApplicationIcon>ChatGPT Image Jun 18, 2025, 05_57_16 AM (1).ico</ApplicationIcon>
+	<PlatformTarget>x64</PlatformTarget>
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<Title>DISM Tool</Title>
+	<Version>0.2.1</Version>
+	<Product>DISM Tool</Product>
+	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
+	<Copyright>2025 - Emmanuel Flores</Copyright>
+	<PackageIcon>2.png</PackageIcon>
+	<PackageReadmeFile>readme.md</PackageReadmeFile>
+	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+---
+
+## v1.2.0 - June 2025
+
+### ✨ New Features
+- **Modernized UI**  
+  - Windows 11-inspired dark theme
+  - Acrylic-style transparent background (blur effect)
+  - Flat-style controls for a cleaner and more consistent look
+  - Custom button hover effects
+
+- **Command Selection System**  
+  - Dropdown command selector that dynamically reveals relevant input fields
+
+- **DISM Command Integration**
+  - Added support for:
+    - `/RestoreHealth` with optional source
+    - `/Mount-WIM` and `/Unmount-WIM`
+    - `/Add-Package` and `/Remove-Package`
+    - `/Get-Packages` list
+    - `/Export-Image` and component folder mount/export
+    - MSU/CAB extraction via folder/file dialogs
+
+- **Output Logging**
+  - Color-coded output for real-time feedback:
+    - Yellow for execution commands
+    - Cyan for standard DISM output
+    - Red for errors
+    - Green for success confirmation
+  - Full output log export to `.txt` file via menu
+
+- **Menu Bar**
+  - Added "About" dialog
+  - Added "Export Log" option
+
+- **Strong-Named Assembly**
+  - Application is now signed using a `.pfx` certificate for trust and integrity
+
+### 🛠️ Improvements
+- Multi-threaded-safe UI logging using `Invoke()` to fix cross-thread update errors
+- Refactored code into modular methods for better readability and maintenance
+- Font updates for consistency across labels, inputs, and output areas
+- Disabled unused fields dynamically to improve clarity and usability
+
+### 🐞 Fixes
+- Fixed issue where logs were being overwritten rather than accumulated
+- Resolved error on Windows 10/11 when launching without admin rights (message included)
+- Handled path validation for file/directory inputs before execution
+
+---
+
+## v1.0.0 - Initial Release
+
+### ✅ Features
+- Simple GUI for basic DISM tasks
+- Execute commands and view plain text output
+- Static field layout</PackageReleaseNotes>
+	<FileVersion>1.5.8</FileVersion>
+	<Platforms>AnyCPU;x64</Platforms>
+	<ApplicationManifest>app.manifest</ApplicationManifest>
+	<SignAssembly>False</SignAssembly>
+	<PackageLicenseFile>License.txt</PackageLicenseFile>
+	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="ChatGPT Image Jun 18, 2025, 05_57_16 AM (1).ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Downloads\2.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\License.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+</Project>
