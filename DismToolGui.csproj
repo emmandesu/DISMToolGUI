@@ -10,7 +10,7 @@
 	<AssemblyOriginatorKeyFile>DismToolCert.pfx</AssemblyOriginatorKeyFile>
 	<DelaySign>False</DelaySign>
 	<LangVersion>latest</LangVersion>
-	<ApplicationIcon>ChatGPT Image Jun 18, 2025, 05_57_16 AM (1).ico</ApplicationIcon>
+	<ApplicationIcon>DISM Tool.ico</ApplicationIcon>
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool</Title>
