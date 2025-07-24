@@ -14,7 +14,7 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool</Title>
-	<Version>0.2.1</Version>
+	<Version>1.5.8</Version>
 	<Product>DISM Tool</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
