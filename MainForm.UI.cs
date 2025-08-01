@@ -129,7 +129,7 @@ namespace DismToolGui
 
             openCbsLogButton = new Button
             {
-                Text = "📄 Open CBS.log",
+                Text = "\u2610 Open CBS.log",
                 Location = new Point(600, 10),
                 Width = 130,
                 Height = 36,
