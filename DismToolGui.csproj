@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>DismToolGui</RootNamespace>
@@ -10,17 +10,28 @@
 	<AssemblyOriginatorKeyFile>DismToolCert.pfx</AssemblyOriginatorKeyFile>
 	<DelaySign>False</DelaySign>
 	<LangVersion>latest</LangVersion>
-	<ApplicationIcon>DISM Tool.ico</ApplicationIcon>
+	<ApplicationIcon>DISM.ico</ApplicationIcon>
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.5.8</Version>
-	<Product>DISM Tool</Product>
+	<Version>1.6.1</Version>
+	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
 	<PackageIcon>2.png</PackageIcon>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+Version 1.5.10-stable — Fixed Build
+
+Improved startup stability and error logging
+Cleaned up license acceptance flow
+Fixed command result reporting to show actual success/failure
+Added proper offline servicing support for supported DISM actions
+Improved input validation for WIM, CAB, mount folder, and index fields
+Fixed top-bar layout issues and theme inconsistencies
+Replaced missing Release Notes form dependency with built-in dialog
+Renamed export destination field for clarity
 
 ---
 
@@ -79,15 +90,17 @@
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.5.8</FileVersion>
+	<FileVersion>1.6.1</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>
 	<PackageLicenseFile>License.txt</PackageLicenseFile>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	<IncludeSymbols>False</IncludeSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="ChatGPT Image Jun 18, 2025, 05_57_16 AM (1).ico" />
+    <Content Include="DISM.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Downloads\2.png">
