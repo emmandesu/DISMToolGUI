@@ -21,21 +21,6 @@ With this tool, you can:
 
 ---
 
-## 🚀 What's New in v1.6.1
-
-### ✅ Highlights
-
-- Fixed the **License Agreement** window layout
-- Restored visibility of the **Accept** and **Decline** buttons
-- Improved license text formatting and readability
-- Added the new **MSU Expander Tool**
-- Replaced the legacy **Extract MSU/CAB** option with a dedicated launcher
-- Improved command result reporting
-- Improved layout, theme consistency, and startup reliability
-- Updated application metadata and release versioning for **v1.6.1**
-
----
-
 ## 🔧 Features
 
 - **DISM Operations**
