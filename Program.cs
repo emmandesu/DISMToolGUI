@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows.Forms;
 
 namespace DismToolGui
 {
-    static class Program
+    internal static class Program
     {
         [STAThread]
         static void Main()
@@ -14,38 +14,62 @@ namespace DismToolGui
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
-                // ✅ Load config file (this happens via static constructor in SettingsManager)
-
-                // 🔐 Show license form if not accepted
-                if (!SettingsManager.GetBool("licenseAccepted"))
+                if (!Settings.Default.LicenseAccepted)
                 {
                     using var licenseForm = new LicenseForm();
                     var result = licenseForm.ShowDialog();
 
-                    // Only allow launch if license was accepted
                     if (!licenseForm.Accepted || result != DialogResult.OK)
                     {
-                        MessageBox.Show("You must accept the license to use this tool.",
-                            "License Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(
+                            "You must accept the license to use this tool.",
+                            "License Required",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+
                         return;
+                    }
+
+                    if (licenseForm.RememberAcceptance)
+                    {
+                        Settings.Default.LicenseAccepted = true;
+                        Settings.Default.Save();
                     }
                 }
 
-
-
-                // ✅ Run the main form
                 Application.Run(new MainForm());
             }
             catch (Exception ex)
             {
-                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "startup-error.log");
-                Directory.CreateDirectory(Path.GetDirectoryName(logPath));
+                try
+                {
+                    string logDirectory = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "DismToolGui",
+                        "Logs");
 
-                File.WriteAllText(logPath,
-                    $"[ERROR - {DateTime.Now}]\n{ex.Message}\n\n{ex.StackTrace}");
+                    Directory.CreateDirectory(logDirectory);
 
-                MessageBox.Show($"A startup error occurred.\nLog saved to:\n{logPath}",
-                                "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    string logPath = Path.Combine(logDirectory, "startup-error.log");
+
+                    File.WriteAllText(
+                        logPath,
+                        $"[ERROR - {DateTime.Now:yyyy-MM-dd HH:mm:ss}]{Environment.NewLine}{ex}");
+
+                    MessageBox.Show(
+                        $"A startup error occurred.{Environment.NewLine}Log saved to:{Environment.NewLine}{logPath}",
+                        "Fatal Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+                catch
+                {
+                    MessageBox.Show(
+                        $"A startup error occurred:{Environment.NewLine}{ex.Message}",
+                        "Fatal Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
             }
         }
     }
