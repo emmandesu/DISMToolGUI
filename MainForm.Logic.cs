@@ -376,11 +376,13 @@ namespace DismToolGui
                 "# --- Form ---",
                 "$form = New-Object System.Windows.Forms.Form",
                 "$form.Text = \"MSU Expander Tool v2.2\"",
-                "$form.Size = New-Object System.Drawing.Size(620,460)",
+                "$form.ClientSize = New-Object System.Drawing.Size(620,460)",
+                "$form.MinimumSize = New-Object System.Drawing.Size(560,420)",
                 "$form.StartPosition = \"CenterScreen\"",
                 "",
-                "# Disable DPI scaling issues",
-                "$form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::None",
+                "# Scale the window and controls with the display DPI",
+                "$form.AutoScaleDimensions = New-Object System.Drawing.SizeF(96,96)",
+                "$form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi",
                 "",
                 "# Consistent font",
                 "$uiFont = New-Object System.Drawing.Font(\"Segoe UI\",9)",
@@ -399,6 +401,8 @@ namespace DismToolGui
                 "$txtMSU.Location = New-Object System.Drawing.Point(90,20)",
                 "$txtMSU.Size = New-Object System.Drawing.Size(400,23)",
                 "$txtMSU.Anchor = \"Top,Left,Right\"",
+                "$txtMSU.AutoCompleteMode = \"SuggestAppend\"",
+                "$txtMSU.AutoCompleteSource = \"FileSystem\"",
                 "$form.Controls.Add($txtMSU)",
                 "",
                 "# --- Browse MSU ---",
@@ -429,6 +433,8 @@ namespace DismToolGui
                 "$txtDest.Location = New-Object System.Drawing.Point(90,60)",
                 "$txtDest.Size = New-Object System.Drawing.Size(400,23)",
                 "$txtDest.Anchor = \"Top,Left,Right\"",
+                "$txtDest.AutoCompleteMode = \"SuggestAppend\"",
+                "$txtDest.AutoCompleteSource = \"FileSystemDirectories\"",
                 "$form.Controls.Add($txtDest)",
                 "",
                 "# --- Browse Destination ---",
@@ -456,7 +462,8 @@ namespace DismToolGui
                 "$btnExpand = New-Object System.Windows.Forms.Button",
                 "$btnExpand.Text = \"Expand MSU\"",
                 "$btnExpand.Size = New-Object System.Drawing.Size(130,30)",
-                "$btnExpand.Location = New-Object System.Drawing.Point(230,120)",
+                "$btnExpand.Location = New-Object System.Drawing.Point(245,120)",
+                "$btnExpand.Anchor = \"Top\"",
                 "$form.Controls.Add($btnExpand)",
                 "",
                 "# --- Progress Bar ---",
@@ -469,6 +476,8 @@ namespace DismToolGui
                 "# --- Log Box ---",
                 "$txtLog = New-Object System.Windows.Forms.TextBox",
                 "$txtLog.Multiline = $true",
+                "$txtLog.ReadOnly = $true",
+                "$txtLog.WordWrap = $false",
                 "$txtLog.ScrollBars = \"Vertical\"",
                 "$txtLog.Location = New-Object System.Drawing.Point(10,190)",
                 "$txtLog.Size = New-Object System.Drawing.Size(580,220)",
@@ -480,13 +489,31 @@ namespace DismToolGui
                 "    param([string]$msg)",
                 "    $timestamp = (Get-Date).ToString(\"yyyy-MM-dd HH:mm:ss\")",
                 "    $txtLog.AppendText(\"[$timestamp] $msg`r`n\")",
+                "    $txtLog.SelectionStart = $txtLog.TextLength",
+                "    $txtLog.ScrollToCaret()",
+                "    [System.Windows.Forms.Application]::DoEvents()",
+                "}",
+                "",
+                "# --- Responsive process runner ---",
+                "function Invoke-ExpandProcess {",
+                "    param($sourcePath, $outputFolder)",
+                "",
+                "    $expandExe = \"$env:SystemRoot\\System32\\expand.exe\"",
+                "    $process = Start-Process -FilePath $expandExe -ArgumentList ('\"{0}\" -F:* \"{1}\"' -f $sourcePath, $outputFolder) -NoNewWindow -PassThru",
+                "",
+                "    while (!$process.HasExited) {",
+                "        [System.Windows.Forms.Application]::DoEvents()",
+                "        Start-Sleep -Milliseconds 100",
+                "    }",
+                "",
+                "    $exitCode = $process.ExitCode",
+                "    $process.Dispose()",
+                "    if ($exitCode -ne 0) { throw \"expand.exe failed with exit code $exitCode\" }",
                 "}",
                 "",
                 "# --- Expand CAB ---",
                 "function Expand-CAB {",
                 "    param($cabPath, $outputFolder)",
-                "",
-                "    $expandExe = \"$env:SystemRoot\\System32\\expand.exe\"",
                 "",
                 "    if (!(Test-Path $outputFolder)) {",
                 "        New-Item -ItemType Directory -Path $outputFolder | Out-Null",
@@ -494,7 +521,7 @@ namespace DismToolGui
                 "",
                 "    Write-Log \"Expanding CAB: $cabPath\"",
                 "",
-                "    Start-Process -FilePath $expandExe -ArgumentList ('\"{0}\" -F:* \"{1}\"' -f $cabPath, $outputFolder) -NoNewWindow -Wait",
+                "    Invoke-ExpandProcess $cabPath $outputFolder",
                 "}",
                 "",
                 "# --- Expand Logic ---",
@@ -515,12 +542,20 @@ namespace DismToolGui
                 "",
                 "    Write-Log \"Starting MSU expansion...\"",
                 "    $progress.Value = 10",
+                "    $btnExpand.Enabled = $false",
+                "    $txtMSU.Enabled = $false",
+                "    $txtDest.Enabled = $false",
+                "    $btnBrowseMSU.Enabled = $false",
+                "    $btnBrowseDest.Enabled = $false",
+                "    $chkDeep.Enabled = $false",
+                "    [System.Windows.Forms.Application]::DoEvents()",
                 "",
                 "    try {",
-                "        Start-Process \"$env:SystemRoot\\System32\\expand.exe\" -ArgumentList ('\"{0}\" -F:* \"{1}\"' -f $msu, $dest) -Wait -NoNewWindow",
+                "        Invoke-ExpandProcess $msu $dest",
                 "",
                 "        Write-Log \"MSU expanded\"",
                 "        $progress.Value = 40",
+                "        [System.Windows.Forms.Application]::DoEvents()",
                 "",
                 "        if ($deep) {",
                 "            $cabFiles = Get-ChildItem $dest -Filter *.cab -Recurse",
@@ -543,11 +578,20 @@ namespace DismToolGui
                 "    }",
                 "    catch {",
                 "        Write-Log \"ERROR: $_\"",
+                "        $progress.Value = 0",
+                "    }",
+                "    finally {",
+                "        $btnExpand.Enabled = $true",
+                "        $txtMSU.Enabled = $true",
+                "        $txtDest.Enabled = $true",
+                "        $btnBrowseMSU.Enabled = $true",
+                "        $btnBrowseDest.Enabled = $true",
+                "        $chkDeep.Enabled = $true",
                 "    }",
                 "})",
                 "",
                 "# --- Run ---",
-                "$form.Topmost = $true",
+                "$form.Add_FormClosing({ if (!$btnExpand.Enabled) { $_.Cancel = $true } })",
                 "$form.Add_Shown({ $form.Activate() })",
                 "[void]$form.ShowDialog()"
             });
@@ -562,15 +606,18 @@ namespace DismToolGui
             }
 
             string line = $"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}";
+            int entryStart = outputBox.TextLength;
 
-            outputBox.SelectionStart = outputBox.TextLength;
+            outputBox.SelectionStart = entryStart;
             outputBox.SelectionLength = 0;
-            outputBox.SelectionColor = color;
+            outputBox.SelectionColor = ResolveLogColor(color, isDark);
             outputBox.AppendText(line);
             outputBox.SelectionColor = outputBox.ForeColor;
             outputBox.ScrollToCaret();
 
+            logEntries.Add((entryStart, line.Length, color));
             logContent += line;
+            exportLogMenuItem.Enabled = true;
         }
     }
 }

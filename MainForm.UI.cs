@@ -41,14 +41,18 @@ namespace DismToolGui
         private RadioButton radioUnmountAppend;
 
         private string logContent = string.Empty;
+        private readonly List<(int Start, int Length, Color RequestedColor)> logEntries =
+            new List<(int Start, int Length, Color RequestedColor)>();
         private bool isExecuting = false;
         private bool isDark = true;
 
         private void InitializeComponent()
         {
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "DISM Tool GUI";
-            Size = new Size(820, 640);
-            MinimumSize = new Size(820, 640);
+            ClientSize = new Size(820, 640);
+            MinimumSize = new Size(760, 560);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 10);
 
@@ -58,14 +62,16 @@ namespace DismToolGui
             {
                 Dock = DockStyle.Fill,
                 RowCount = 5,
-                ColumnCount = 1
+                ColumnCount = 1,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
             };
 
-            rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
-            rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             Controls.Add(rootLayout);
             rootLayout.Controls.Add(menuStrip, 0, 0);
@@ -73,7 +79,10 @@ namespace DismToolGui
             topBarLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 4,
+                RowCount = 1,
                 Padding = new Padding(10, 10, 10, 10)
             };
 
@@ -87,6 +96,8 @@ namespace DismToolGui
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font("Segoe UI", 10),
+                IntegralHeight = false,
+                DropDownHeight = 280,
                 Margin = new Padding(0, 0, 10, 0)
             };
             commandSelector.Items.AddRange(new object[]
@@ -106,13 +117,13 @@ namespace DismToolGui
 
             runButton = new Button
             {
-                Text = "▶ Execute",
-                Width = 120,
-                Height = 36,
-                AutoSize = false,
+                Text = "Execute",
+                AutoSize = true,
+                MinimumSize = new Size(110, 36),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI Semibold", 10),
-                Margin = new Padding(0, 0, 10, 0)
+                Margin = new Padding(0, 0, 10, 0),
+                Anchor = AnchorStyles.None
             };
             runButton.FlatAppearance.BorderSize = 0;
             runButton.Click += RunButton_Click;
@@ -121,37 +132,41 @@ namespace DismToolGui
 
             themeToggleButton = new Button
             {
-                Text = "🌙 Light Mode",
-                Width = 130,
-                Height = 36,
-                AutoSize = false,
+                Text = "Light mode",
+                AutoSize = true,
+                MinimumSize = new Size(120, 36),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10),
-                Margin = new Padding(0, 0, 10, 0)
+                Margin = new Padding(0, 0, 10, 0),
+                Anchor = AnchorStyles.None
             };
             themeToggleButton.FlatAppearance.BorderSize = 0;
             themeToggleButton.Click += (s, e) =>
             {
                 isDark = !isDark;
                 ApplyTheme(isDark);
-                themeToggleButton.Text = isDark ? "🌙 Light Mode" : "🌑 Dark Mode";
+                themeToggleButton.Text = isDark ? "Light mode" : "Dark mode";
             };
 
             openCbsLogButton = new Button
             {
-                Text = "☐ Open CBS.log",
-                Width = 135,
-                Height = 36,
-                AutoSize = false,
+                Text = "Open CBS.log",
+                AutoSize = true,
+                MinimumSize = new Size(125, 36),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10),
                 Visible = false,
-                Margin = new Padding(0)
+                Margin = new Padding(0),
+                Anchor = AnchorStyles.None
             };
             openCbsLogButton.FlatAppearance.BorderSize = 0;
             openCbsLogButton.Click += (s, e) =>
             {
-                const string path = @"C:\Windows\Logs\CBS\CBS.log";
+                string path = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    "Logs",
+                    "CBS",
+                    "CBS.log");
                 if (File.Exists(path))
                     Process.Start("notepad.exe", path);
                 else
@@ -191,6 +206,7 @@ namespace DismToolGui
                 Text = "Online (default)",
                 Checked = true,
                 AutoSize = true,
+                Font = new Font("Segoe UI", 9),
                 Location = new Point(10, 20)
             };
 
@@ -198,6 +214,7 @@ namespace DismToolGui
             {
                 Text = "Offline (use Mount Folder)",
                 AutoSize = true,
+                Font = new Font("Segoe UI", 9),
                 Location = new Point(10, 45)
             };
 
@@ -224,6 +241,7 @@ namespace DismToolGui
                 Text = "Discard changes (default)",
                 Checked = true,
                 AutoSize = true,
+                Font = new Font("Segoe UI", 9),
                 Location = new Point(10, 20)
             };
 
@@ -231,6 +249,7 @@ namespace DismToolGui
             {
                 Text = "Commit changes",
                 AutoSize = true,
+                Font = new Font("Segoe UI", 9),
                 Location = new Point(10, 45)
             };
 
@@ -238,6 +257,7 @@ namespace DismToolGui
             {
                 Text = "Append changes",
                 AutoSize = true,
+                Font = new Font("Segoe UI", 9),
                 Location = new Point(10, 70)
             };
 
@@ -264,7 +284,7 @@ namespace DismToolGui
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(10),
-                AutoScroll = true
+                AutoScroll = false
             };
 
             outputBox = new RichTextBox
@@ -274,7 +294,8 @@ namespace DismToolGui
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Consolas", 9),
                 ScrollBars = RichTextBoxScrollBars.Both,
-                WordWrap = false
+                WordWrap = false,
+                DetectUrls = false
             };
 
             outputPanel.Controls.Add(outputBox);
@@ -285,10 +306,14 @@ namespace DismToolGui
                 Text = $"Version {Version}",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight,
-                Padding = new Padding(0, 5, 10, 5)
+                Padding = new Padding(0, 5, 10, 5),
+                AutoSize = true
             };
             rootLayout.Controls.Add(versionLabel, 0, 4);
 
+            MainMenuStrip = menuStrip;
+            AcceptButton = runButton;
+            commandSelector.SelectedIndex = 0;
             ApplyTheme(isDark);
         }
 
@@ -318,21 +343,15 @@ namespace DismToolGui
 
                 if (saveDialog.ShowDialog() == DialogResult.OK)
                     File.WriteAllText(saveDialog.FileName, logContent ?? string.Empty);
-            });
+            })
+            {
+                Enabled = false
+            };
 
             releaseNotesMenuItem = new ToolStripMenuItem("Release Notes", null, (s, e) =>
             {
-                MessageBox.Show(
-                    "Release Notes\n\n" +
-                    "• Replaced Extract MSU/CAB with MSU Expander Tool\n" +
-                    "• Fixed command result reporting\n" +
-                    "• Improved top-bar layout and theme switching\n" +
-                    "• Added safer startup logging\n" +
-                    "• Cleaned up license persistence\n" +
-                    "• Added offline handling for supported DISM commands",
-                    "Release Notes",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                using var releaseNotesForm = new ReleaseNotesForm(isDark);
+                releaseNotesForm.ShowDialog(this);
             });
 
             menuStrip.Items.Add(helpMenuItem);
@@ -409,6 +428,7 @@ namespace DismToolGui
             outputBox.BackColor = outputBg;
             outputBox.ForeColor = outputFg;
             versionLabel.ForeColor = Color.Gray;
+            RecolorLog(dark);
 
             imageTypeGroup.BackColor = panelBackground;
             imageTypeGroup.ForeColor = foreground;
@@ -433,6 +453,44 @@ namespace DismToolGui
                 field.TextBox.BackColor = textboxBg;
                 field.TextBox.ForeColor = textboxFg;
             }
+        }
+
+        private Color ResolveLogColor(Color requestedColor, bool dark)
+        {
+            if (requestedColor == Color.White)
+                return dark ? Color.Gainsboro : Color.Black;
+            if (requestedColor == Color.Yellow)
+                return dark ? Color.Gold : Color.DarkGoldenrod;
+            if (requestedColor == Color.LightBlue)
+                return dark ? Color.DeepSkyBlue : Color.RoyalBlue;
+            if (requestedColor == Color.Green)
+                return dark ? Color.LightGreen : Color.DarkGreen;
+            if (requestedColor == Color.Red)
+                return dark ? Color.IndianRed : Color.Firebrick;
+            if (requestedColor == Color.Orange)
+                return dark ? Color.Orange : Color.DarkOrange;
+
+            return requestedColor;
+        }
+
+        private void RecolorLog(bool dark)
+        {
+            if (outputBox == null || outputBox.TextLength == 0)
+                return;
+
+            int selectionStart = outputBox.SelectionStart;
+            int selectionLength = outputBox.SelectionLength;
+
+            foreach (var entry in logEntries)
+            {
+                if (entry.Start + entry.Length > outputBox.TextLength)
+                    continue;
+
+                outputBox.Select(entry.Start, entry.Length);
+                outputBox.SelectionColor = ResolveLogColor(entry.RequestedColor, dark);
+            }
+
+            outputBox.Select(selectionStart, selectionLength);
         }
 
         private void RadioImageType_CheckedChanged(object sender, EventArgs e)

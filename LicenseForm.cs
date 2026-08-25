@@ -17,13 +17,27 @@ namespace DismToolGui
         {
             SuspendLayout();
 
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             Text = "MIT License Agreement";
             ClientSize = new Size(720, 520);
+            MinimumSize = new Size(540, 400);
             StartPosition = FormStartPosition.CenterScreen;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
             MinimizeBox = false;
             BackColor = Color.White;
+            Font = new Font("Segoe UI", 9);
+            ShowIcon = false;
+
+            var rootLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Padding = new Padding(12)
+            };
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             var licenseTextBox = new RichTextBox
             {
@@ -39,20 +53,26 @@ namespace DismToolGui
                 Text = GetLicenseText()
             };
 
-            var bottomPanel = new Panel
+            var bottomLayout = new TableLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 60,
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                RowCount = 1,
                 BackColor = Color.White,
-                Padding = new Padding(12, 10, 12, 10)
+                Margin = new Padding(0, 10, 0, 0)
             };
+            bottomLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            bottomLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
             dontShowAgainCheckBox = new CheckBox
             {
                 Text = "Don't show again",
                 AutoSize = true,
                 ForeColor = Color.Black,
-                Location = new Point(8, 14)
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0)
             };
 
             var buttonPanel = new FlowLayoutPanel
@@ -72,18 +92,22 @@ namespace DismToolGui
                 Text = "Decline",
                 Size = new Size(100, 32),
                 BackColor = Color.LightCoral,
-                UseVisualStyleBackColor = true,
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = false,
                 Margin = new Padding(0, 0, 10, 0)
             };
+            declineButton.FlatAppearance.BorderColor = Color.Firebrick;
 
             acceptButton = new Button
             {
                 Text = "Accept",
                 Size = new Size(100, 32),
                 BackColor = Color.LightGreen,
-                UseVisualStyleBackColor = true,
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = false,
                 Margin = new Padding(0)
             };
+            acceptButton.FlatAppearance.BorderColor = Color.SeaGreen;
 
             acceptButton.Click += (s, e) =>
             {
@@ -102,11 +126,11 @@ namespace DismToolGui
             buttonPanel.Controls.Add(declineButton);
             buttonPanel.Controls.Add(acceptButton);
 
-            bottomPanel.Controls.Add(buttonPanel);
-            bottomPanel.Controls.Add(dontShowAgainCheckBox);
-
-            Controls.Add(licenseTextBox);
-            Controls.Add(bottomPanel);
+            bottomLayout.Controls.Add(dontShowAgainCheckBox, 0, 0);
+            bottomLayout.Controls.Add(buttonPanel, 1, 0);
+            rootLayout.Controls.Add(licenseTextBox, 0, 0);
+            rootLayout.Controls.Add(bottomLayout, 0, 1);
+            Controls.Add(rootLayout);
 
             AcceptButton = acceptButton;
             CancelButton = declineButton;
