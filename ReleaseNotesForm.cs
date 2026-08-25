@@ -6,13 +6,15 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.7.0-stable\r\n\r\n" +
+            "• Added WIM / ESD Image Inspector with selectable indexes\r\n" +
+            "• Added Mounted Image Manager with remount, commit, discard, and cleanup actions\r\n" +
+            "• Added live command preview and copy support\r\n" +
+            "• Added confirmation prompts for servicing changes\r\n" +
+            "• Preserved responsive layouts and readable light/dark themes\r\n\r\n" +
             "Version 1.6.1-stable\r\n\r\n" +
             "• Replaced Extract MSU/CAB with MSU Expander Tool\r\n" +
-            "• Fixed command result reporting\r\n" +
-            "• Improved responsive layout and theme switching\r\n" +
-            "• Added safer startup logging\r\n" +
-            "• Cleaned up license persistence\r\n" +
-            "• Added offline handling for supported DISM commands";
+            "• Fixed command result reporting and offline servicing behavior";
 
         public ReleaseNotesForm()
             : this(true)

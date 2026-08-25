@@ -18,6 +18,8 @@ With this tool, you can:
 - view live command output directly in the application
 - switch between **dark** and **light** themes
 - launch the built-in **MSU Expander Tool** for update package extraction
+- inspect WIM and ESD editions before choosing an image index
+- manage mounted images and preview commands before execution
 
 ---
 
@@ -30,7 +32,20 @@ With this tool, you can:
   - Add Package (CAB)
   - Remove Package
   - Get Installed Packages
-  - Mount and Export
+  - Export WIM
+
+- **Image Management Tools**
+  - Inspect WIM / ESD indexes, editions, architecture, version, and size
+  - Send a selected image index back to the Mount or Export workflow
+  - List mounted images and open their mount folders
+  - Remount recoverable images
+  - Commit or discard mounted-image changes
+  - Clean corrupted, unrecoverable mount points
+
+- **Command Safety**
+  - Live preview of the exact DISM or SFC command
+  - One-click command copy
+  - Confirmation prompts before servicing changes
 
 - **SFC Operations**
   - `sfc /scannow`
@@ -66,7 +81,7 @@ With this tool, you can:
 | Add Package (CAB)      |   ✅   |   ✅    | CAB package installation |
 | Remove Package         |   ✅   |   ✅    | Requires package name |
 | Get Installed Packages |   ✅   |   ❌    | Uses DISM `/Get-Packages` |
-| Mount and Export       |   ❌   |   ✅    | Mounts image, exports, then unmounts |
+| Export WIM             |   ❌   |   ✅    | Exports the selected image index directly |
 | MSU Expander Tool      |   ✅   |   ✅    | Opens dedicated package expansion tool |
 | SFC Scannow            |   ✅   |   ❌    | Full system file integrity scan |
 | SFC VerifyOnly         |   ✅   |   ❌    | Verification-only scan |

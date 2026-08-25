@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -72,6 +73,7 @@ namespace DismToolGui
             }
 
             ToggleCbsLogButtonVisibility(cmd);
+            UpdateCommandPreview();
         }
 
         private async void RunButton_Click(object sender, EventArgs e)
@@ -116,6 +118,9 @@ namespace DismToolGui
                                 ? $"{targetImage} /Cleanup-Image /RestoreHealth"
                                 : $"{targetImage} /Cleanup-Image /RestoreHealth /Source:\"{src}\" /LimitAccess";
 
+                            if (!ConfirmCommandExecution(cmd))
+                                break;
+
                             await ExecuteCommandAsync(arguments);
                             break;
                         }
@@ -134,6 +139,9 @@ namespace DismToolGui
                             if (!TryValidateEmptyMountDirectory(mount))
                                 break;
 
+                            if (!ConfirmCommandExecution(cmd))
+                                break;
+
                             await ExecuteCommandAsync($"/Mount-WIM /WimFile:\"{wim}\" /Index:{imageIndex} /MountDir:\"{mount}\"");
                             break;
                         }
@@ -147,6 +155,9 @@ namespace DismToolGui
                             }
 
                             string unmountMode = GetSelectedUnmountOption();
+                            if (!ConfirmCommandExecution(cmd))
+                                break;
+
                             await ExecuteCommandAsync($"/Unmount-WIM /MountDir:\"{mount}\" {unmountMode}");
                             break;
                         }
@@ -160,6 +171,9 @@ namespace DismToolGui
                             }
 
                             if (!TryGetImageTarget(out string targetImage))
+                                break;
+
+                            if (!ConfirmCommandExecution(cmd))
                                 break;
 
                             await ExecuteCommandAsync($"{targetImage} /Add-Package /PackagePath:\"{cab}\"");
@@ -179,6 +193,9 @@ namespace DismToolGui
                             }
 
                             if (!TryGetImageTarget(out string targetImage))
+                                break;
+
+                            if (!ConfirmCommandExecution(cmd))
                                 break;
 
                             await ExecuteCommandAsync($"{targetImage} /Remove-Package /PackageName:\"{pkg}\"");
@@ -202,6 +219,9 @@ namespace DismToolGui
                                 break;
                             }
 
+                            if (!ConfirmCommandExecution(cmd))
+                                break;
+
                             await ExecuteCommandAsync(
                                 $"/Export-Image /SourceImageFile:\"{wim}\" /SourceIndex:{imageIndex} /DestinationImageFile:\"{destinationImage}\"");
 
@@ -216,6 +236,8 @@ namespace DismToolGui
                         }
 
                     case "SFC - Scannow":
+                        if (!ConfirmCommandExecution(cmd))
+                            break;
                         await ExecuteCommandAsync(sfcPath, "/scannow");
                         break;
 
@@ -318,6 +340,145 @@ namespace DismToolGui
             if (radioUnmountCommit.Checked) return "/Commit";
             if (radioUnmountAppend.Checked) return "/Commit /Append";
             return "/Discard";
+        }
+
+        private void UpdateCommandPreview()
+        {
+            if (commandPreviewBox == null)
+                return;
+
+            string selectedCommand = commandSelector?.SelectedItem?.ToString();
+            commandPreviewBox.Text = BuildCommandPreview(selectedCommand);
+            copyCommandButton.Enabled =
+                !string.IsNullOrWhiteSpace(commandPreviewBox.Text) &&
+                selectedCommand != "MSU Expander Tool";
+        }
+
+        private void CopyCommandPreview()
+        {
+            if (string.IsNullOrWhiteSpace(commandPreviewBox.Text))
+                return;
+
+            try
+            {
+                Clipboard.SetText(commandPreviewBox.Text);
+                WriteLog("Command copied to the clipboard.", Color.LightBlue);
+            }
+            catch (ExternalException)
+            {
+                MessageBox.Show(
+                    this,
+                    "The clipboard is temporarily unavailable. Try copying the command again.",
+                    "Copy command",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+
+        private string BuildCommandPreview(string command)
+        {
+            string wim = PreviewValue(GetFieldText("WIM File Path"), "<image file>");
+            string index = PreviewValue(GetFieldText("Index"), "<index>");
+            string mount = PreviewValue(GetFieldText("Mount Folder"), "<mount folder>");
+            string source = GetFieldText("Source Path");
+            string cab = PreviewValue(GetFieldText("CAB File Path"), "<CAB file>");
+            string package = PreviewValue(GetFieldText("Package Name to Remove"), "<package name>");
+            string destination = PreviewValue(
+                GetFieldText("Destination Image File"),
+                "<destination image>");
+            string imageTarget = radioOnline?.Checked != false
+                ? "/Online"
+                : $"/Image:\"{mount}\"";
+
+            switch (command)
+            {
+                case "Run RestoreHealth":
+                    return string.IsNullOrWhiteSpace(source)
+                        ? $"{dismPath} {imageTarget} /Cleanup-Image /RestoreHealth"
+                        : $"{dismPath} {imageTarget} /Cleanup-Image /RestoreHealth /Source:\"{source}\" /LimitAccess";
+                case "Mount WIM":
+                    return $"{dismPath} /Mount-WIM /WimFile:\"{wim}\" /Index:{index} /MountDir:\"{mount}\"";
+                case "Unmount WIM":
+                    return $"{dismPath} /Unmount-WIM /MountDir:\"{mount}\" {GetSelectedUnmountOption()}";
+                case "Add Package (CAB)":
+                    return $"{dismPath} {imageTarget} /Add-Package /PackagePath:\"{cab}\"";
+                case "Get Installed Packages":
+                    return $"{dismPath} /Online /Get-Packages";
+                case "Remove Package":
+                    return $"{dismPath} {imageTarget} /Remove-Package /PackageName:\"{package}\"";
+                case "Export WIM":
+                    return $"{dismPath} /Export-Image /SourceImageFile:\"{wim}\" /SourceIndex:{index} /DestinationImageFile:\"{destination}\"";
+                case "MSU Expander Tool":
+                    return "Built-in MSU Expander Tool (streamed securely to Windows PowerShell)";
+                case "SFC - Scannow":
+                    return $"{sfcPath} /scannow";
+                case "SFC - VerifyOnly":
+                    return $"{sfcPath} /verifyonly";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string PreviewValue(string value, string placeholder)
+        {
+            return string.IsNullOrWhiteSpace(value) ? placeholder : value;
+        }
+
+        private bool ConfirmCommandExecution(string command)
+        {
+            if (confirmCommandCheckBox?.Checked != true || !RequiresConfirmation(command))
+                return true;
+
+            string preview = BuildCommandPreview(command);
+            return MessageBox.Show(
+                       this,
+                       $"Review the command before execution:{Environment.NewLine}{Environment.NewLine}{preview}{Environment.NewLine}{Environment.NewLine}Continue?",
+                       "Confirm command",
+                       MessageBoxButtons.YesNo,
+                       MessageBoxIcon.Warning,
+                       MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+        }
+
+        private static bool RequiresConfirmation(string command)
+        {
+            return command == "Run RestoreHealth" ||
+                   command == "Mount WIM" ||
+                   command == "Unmount WIM" ||
+                   command == "Add Package (CAB)" ||
+                   command == "Remove Package" ||
+                   command == "Export WIM" ||
+                   command == "SFC - Scannow";
+        }
+
+        private void OpenImageInspector()
+        {
+            using var inspector = new ImageInspectorForm(
+                isDark,
+                GetFieldText("WIM File Path"));
+
+            if (inspector.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            string selectedCommand = commandSelector.SelectedItem?.ToString();
+            if (selectedCommand != "Mount WIM" && selectedCommand != "Export WIM")
+            {
+                commandSelector.SelectedItem = Path.GetExtension(inspector.SelectedImagePath)
+                    .Equals(".esd", StringComparison.OrdinalIgnoreCase)
+                    ? "Export WIM"
+                    : "Mount WIM";
+            }
+
+            inputFields["WIM File Path"].TextBox.Text = inspector.SelectedImagePath;
+            inputFields["Index"].TextBox.Text = inspector.SelectedImageIndex.ToString();
+            WriteLog(
+                $"Selected image index {inspector.SelectedImageIndex} from {inspector.SelectedImagePath}.",
+                Color.LightBlue);
+        }
+
+        private void OpenMountedImagesManager()
+        {
+            using var manager = new MountedImagesForm(isDark);
+            manager.ShowDialog(this);
         }
 
         private Task<int> ExecuteCommandAsync(string arguments)

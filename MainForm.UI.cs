@@ -9,7 +9,7 @@ namespace DismToolGui
 {
     public partial class MainForm : Form
     {
-        private const string Version = "1.6.1-stable";
+        private const string Version = "1.7.0-stable";
         private readonly string dismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
         private readonly string sfcPath = Path.Combine(Environment.SystemDirectory, "sfc.exe");
         private readonly string powershellPath = Path.Combine(
@@ -25,6 +25,10 @@ namespace DismToolGui
         private TableLayoutPanel topBarLayout;
         private TableLayoutPanel inputPanel;
         private Panel outputPanel;
+        private GroupBox commandPreviewGroup;
+        private TextBox commandPreviewBox;
+        private Button copyCommandButton;
+        private CheckBox confirmCommandCheckBox;
 
         private Dictionary<string, (Label Label, TextBox TextBox)> inputFields;
 
@@ -36,6 +40,9 @@ namespace DismToolGui
         private ToolStripMenuItem helpMenuItem;
         private ToolStripMenuItem exportLogMenuItem;
         private ToolStripMenuItem releaseNotesMenuItem;
+        private ToolStripMenuItem toolsMenuItem;
+        private ToolStripMenuItem imageInspectorMenuItem;
+        private ToolStripMenuItem mountedImagesMenuItem;
 
         private GroupBox imageTypeGroup;
         private RadioButton radioOnline;
@@ -58,8 +65,8 @@ namespace DismToolGui
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = "DISM Tool GUI";
-            ClientSize = new Size(820, 640);
-            MinimumSize = new Size(760, 560);
+            ClientSize = new Size(900, 720);
+            MinimumSize = new Size(800, 640);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 10);
             FormClosing += MainForm_FormClosing;
@@ -269,6 +276,10 @@ namespace DismToolGui
                 Location = new Point(10, 70)
             };
 
+            radioUnmountDiscard.CheckedChanged += (sender, args) => UpdateCommandPreview();
+            radioUnmountCommit.CheckedChanged += (sender, args) => UpdateCommandPreview();
+            radioUnmountAppend.CheckedChanged += (sender, args) => UpdateCommandPreview();
+
             unmountModeGroup.Controls.Add(radioUnmountDiscard);
             unmountModeGroup.Controls.Add(radioUnmountCommit);
             unmountModeGroup.Controls.Add(radioUnmountAppend);
@@ -285,6 +296,8 @@ namespace DismToolGui
                 { "Package Name to Remove", AddLabeledField("Package Name to Remove:") },
                 { "Destination Image File", AddLabeledField("Destination Image File:") }
             };
+
+            InitializeCommandPreview();
 
             rootLayout.Controls.Add(inputPanel, 0, 2);
 
@@ -323,6 +336,7 @@ namespace DismToolGui
             AcceptButton = runButton;
             commandSelector.SelectedIndex = 0;
             ApplyTheme(isDark);
+            UpdateCommandPreview();
         }
 
         private void InitializeMenu()
@@ -340,6 +354,20 @@ namespace DismToolGui
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             });
+
+            imageInspectorMenuItem = new ToolStripMenuItem(
+                "WIM / ESD Image Inspector",
+                null,
+                (s, e) => OpenImageInspector());
+
+            mountedImagesMenuItem = new ToolStripMenuItem(
+                "Mounted Image Manager",
+                null,
+                (s, e) => OpenMountedImagesManager());
+
+            toolsMenuItem = new ToolStripMenuItem("Tools");
+            toolsMenuItem.DropDownItems.Add(imageInspectorMenuItem);
+            toolsMenuItem.DropDownItems.Add(mountedImagesMenuItem);
 
             exportLogMenuItem = new ToolStripMenuItem("Export Log", null, (s, e) =>
             {
@@ -362,9 +390,71 @@ namespace DismToolGui
                 releaseNotesForm.ShowDialog(this);
             });
 
-            menuStrip.Items.Add(helpMenuItem);
+            menuStrip.Items.Add(toolsMenuItem);
             menuStrip.Items.Add(exportLogMenuItem);
             menuStrip.Items.Add(releaseNotesMenuItem);
+            menuStrip.Items.Add(helpMenuItem);
+        }
+
+        private void InitializeCommandPreview()
+        {
+            commandPreviewGroup = new GroupBox
+            {
+                Text = "Command Preview",
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                Padding = new Padding(10),
+                Margin = new Padding(0, 8, 0, 0)
+            };
+
+            var previewLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                ColumnCount = 2,
+                RowCount = 2,
+                Margin = new Padding(0)
+            };
+            previewLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            previewLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            previewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            previewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            commandPreviewBox = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                Font = new Font("Consolas", 9F),
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(0, 0, 8, 6)
+            };
+
+            copyCommandButton = new Button
+            {
+                Text = "Copy",
+                AutoSize = true,
+                MinimumSize = new Size(80, 30),
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            copyCommandButton.Click += (sender, args) => CopyCommandPreview();
+
+            confirmCommandCheckBox = new CheckBox
+            {
+                Text = "Confirm servicing changes before execution",
+                Checked = true,
+                AutoSize = true,
+                Margin = new Padding(0)
+            };
+
+            previewLayout.Controls.Add(commandPreviewBox, 0, 0);
+            previewLayout.Controls.Add(copyCommandButton, 1, 0);
+            previewLayout.Controls.Add(confirmCommandCheckBox, 0, 1);
+            previewLayout.SetColumnSpan(confirmCommandCheckBox, 2);
+            commandPreviewGroup.Controls.Add(previewLayout);
+
+            inputPanel.Controls.Add(commandPreviewGroup);
+            inputPanel.SetColumnSpan(commandPreviewGroup, 2);
         }
 
         private (Label, TextBox) AddLabeledField(string labelText)
@@ -384,6 +474,7 @@ namespace DismToolGui
                 BorderStyle = BorderStyle.FixedSingle,
                 Visible = false
             };
+            textBox.TextChanged += (sender, args) => UpdateCommandPreview();
 
             inputPanel.Controls.Add(label);
             inputPanel.Controls.Add(textBox);
@@ -420,9 +511,20 @@ namespace DismToolGui
 
             menuStrip.BackColor = menuBackground;
             menuStrip.ForeColor = foreground;
+            foreach (ToolStripItem item in menuStrip.Items)
+                ApplyMenuItemTheme(item, menuBackground, foreground);
 
             commandSelector.BackColor = textboxBg;
             commandSelector.ForeColor = textboxFg;
+
+            commandPreviewGroup.BackColor = panelBackground;
+            commandPreviewGroup.ForeColor = foreground;
+            commandPreviewBox.BackColor = textboxBg;
+            commandPreviewBox.ForeColor = textboxFg;
+            copyCommandButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
+            copyCommandButton.ForeColor = foreground;
+            confirmCommandCheckBox.BackColor = panelBackground;
+            confirmCommandCheckBox.ForeColor = foreground;
 
             runButton.BackColor = dark ? Color.Teal : Color.LightGray;
             runButton.ForeColor = foreground;
@@ -479,6 +581,23 @@ namespace DismToolGui
                 return dark ? Color.Orange : Color.DarkOrange;
 
             return requestedColor;
+        }
+
+        private static void ApplyMenuItemTheme(
+            ToolStripItem item,
+            Color background,
+            Color foreground)
+        {
+            item.BackColor = background;
+            item.ForeColor = foreground;
+
+            if (!(item is ToolStripMenuItem menuItem))
+                return;
+
+            menuItem.DropDown.BackColor = background;
+            menuItem.DropDown.ForeColor = foreground;
+            foreach (ToolStripItem child in menuItem.DropDownItems)
+                ApplyMenuItemTheme(child, background, foreground);
         }
 
         private void RecolorLog(bool dark)
