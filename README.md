@@ -6,7 +6,7 @@
 
 DISM Tool GUI is a Windows desktop front end for common **DISM** and **System File Checker** operations. It combines guided inputs, live output, image inspection, mounted-image management, and command previews in one responsive light/dark interface.
 
-![DISM Tool GUI](https://github.com/user-attachments/assets/a2cc6a40-5c5d-45de-9c72-150fc4b902ab)
+![DISM Tool GUI showing RestoreHealth and its command preview](docs/screenshots/restorehealth-command-preview.png)
 
 > [!IMPORTANT]
 > The application requests administrator privileges at startup because Windows servicing commands require elevation. Review the command preview before making changes to a system or image.
@@ -21,6 +21,14 @@ DISM Tool GUI is a Windows desktop front end for common **DISM** and **System Fi
 - List packages installed on the running Windows installation.
 - Export an image index directly to another WIM file.
 - Run `sfc /scannow` or the read-only `sfc /verifyonly` check.
+
+| Mount a WIM image | Unmount and commit or discard |
+|:---:|:---:|
+| [![Mount WIM command and required fields](docs/screenshots/mount-wim-command-preview.png)](docs/screenshots/mount-wim-command-preview.png) | [![Unmount WIM modes and command preview](docs/screenshots/unmount-wim-command-preview.png)](docs/screenshots/unmount-wim-command-preview.png) |
+
+| Add a CAB package | List installed packages |
+|:---:|:---:|
+| [![Add Package CAB command preview](docs/screenshots/add-package-command-preview.png)](docs/screenshots/add-package-command-preview.png) | [![Get Installed Packages command preview](docs/screenshots/get-packages-command-preview.png)](docs/screenshots/get-packages-command-preview.png) |
 
 ### WIM / ESD Image Inspector
 
@@ -56,6 +64,8 @@ Open **Tools → Mounted Image Manager** to:
 - Optionally expand CAB payloads into `CAB_Extracted`.
 - Keep CAB output separated by relative path to prevent name collisions.
 - View progress and extraction output without freezing the window.
+
+![Built-in MSU Expander Tool launched from the main window](docs/screenshots/msu-expander-tool.png)
 
 ## Quick start
 
