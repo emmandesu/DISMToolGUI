@@ -11,6 +11,12 @@ namespace DismToolGui
     {
         private const string Version = "1.6.1-stable";
         private readonly string dismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
+        private readonly string sfcPath = Path.Combine(Environment.SystemDirectory, "sfc.exe");
+        private readonly string powershellPath = Path.Combine(
+            Environment.SystemDirectory,
+            "WindowsPowerShell",
+            "v1.0",
+            "powershell.exe");
 
         private ComboBox commandSelector;
         private RichTextBox outputBox;
@@ -45,6 +51,7 @@ namespace DismToolGui
             new List<(int Start, int Length, Color RequestedColor)>();
         private bool isExecuting = false;
         private bool isDark = true;
+        private Process activeProcess;
 
         private void InitializeComponent()
         {
@@ -55,6 +62,7 @@ namespace DismToolGui
             MinimumSize = new Size(760, 560);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 10);
+            FormClosing += MainForm_FormClosing;
 
             InitializeMenu();
 
@@ -108,7 +116,7 @@ namespace DismToolGui
                 "Add Package (CAB)",
                 "Get Installed Packages",
                 "Remove Package",
-                "Mount and Export",
+                "Export WIM",
                 "MSU Expander Tool",
                 "SFC - Scannow",
                 "SFC - VerifyOnly"
@@ -168,7 +176,7 @@ namespace DismToolGui
                     "CBS",
                     "CBS.log");
                 if (File.Exists(path))
-                    Process.Start("notepad.exe", path);
+                    Process.Start(Path.Combine(Environment.SystemDirectory, "notepad.exe"), path);
                 else
                     MessageBox.Show("CBS.log not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             };

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -58,8 +58,8 @@ namespace DismToolGui
                     SetFieldVisibility("Mount Folder");
                     break;
 
-                case "Mount and Export":
-                    SetFieldVisibility("WIM File Path", "Index", "Mount Folder", "Destination Image File");
+                case "Export WIM":
+                    SetFieldVisibility("WIM File Path", "Index", "Destination Image File");
                     break;
 
                 case "MSU Expander Tool":
@@ -128,19 +128,13 @@ namespace DismToolGui
                                 break;
                             }
 
-                            if (string.IsNullOrWhiteSpace(idx) || !int.TryParse(idx, out _))
-                            {
-                                WriteLog("A valid numeric index is required.", Color.Red);
+                            if (!TryGetPositiveImageIndex(idx, out int imageIndex))
                                 break;
-                            }
 
-                            if (string.IsNullOrWhiteSpace(mount) || !Directory.Exists(mount))
-                            {
-                                WriteLog("Mount folder not found.", Color.Red);
+                            if (!TryValidateEmptyMountDirectory(mount))
                                 break;
-                            }
 
-                            await ExecuteCommandAsync($"/Mount-WIM /WimFile:\"{wim}\" /Index:{idx} /MountDir:\"{mount}\"");
+                            await ExecuteCommandAsync($"/Mount-WIM /WimFile:\"{wim}\" /Index:{imageIndex} /MountDir:\"{mount}\"");
                             break;
                         }
 
@@ -191,7 +185,7 @@ namespace DismToolGui
                             break;
                         }
 
-                    case "Mount and Export":
+                    case "Export WIM":
                         {
                             if (!File.Exists(wim))
                             {
@@ -199,17 +193,8 @@ namespace DismToolGui
                                 break;
                             }
 
-                            if (string.IsNullOrWhiteSpace(idx) || !int.TryParse(idx, out _))
-                            {
-                                WriteLog("A valid numeric index is required.", Color.Red);
+                            if (!TryGetPositiveImageIndex(idx, out int imageIndex))
                                 break;
-                            }
-
-                            if (string.IsNullOrWhiteSpace(mount) || !Directory.Exists(mount))
-                            {
-                                WriteLog("Mount folder not found.", Color.Red);
-                                break;
-                            }
 
                             if (string.IsNullOrWhiteSpace(destinationImage))
                             {
@@ -217,19 +202,8 @@ namespace DismToolGui
                                 break;
                             }
 
-                            int mountExit = await ExecuteCommandAsync(
-                                $"/Mount-WIM /WimFile:\"{wim}\" /Index:{idx} /MountDir:\"{mount}\"");
-
-                            if (mountExit != 0)
-                                break;
-
-                            int exportExit = await ExecuteCommandAsync(
-                                $"/Export-Image /SourceImageFile:\"{wim}\" /SourceIndex:{idx} /DestinationImageFile:\"{destinationImage}\"");
-
-                            await ExecuteCommandAsync($"/Unmount-WIM /MountDir:\"{mount}\" /Discard");
-
-                            if (exportExit == 0)
-                                WriteLog("Mount and export operation finished.", Color.Green);
+                            await ExecuteCommandAsync(
+                                $"/Export-Image /SourceImageFile:\"{wim}\" /SourceIndex:{imageIndex} /DestinationImageFile:\"{destinationImage}\"");
 
                             break;
                         }
@@ -242,11 +216,11 @@ namespace DismToolGui
                         }
 
                     case "SFC - Scannow":
-                        await ExecuteCommandAsync("sfc", "/scannow");
+                        await ExecuteCommandAsync(sfcPath, "/scannow");
                         break;
 
                     case "SFC - VerifyOnly":
-                        await ExecuteCommandAsync("sfc", "/verifyonly");
+                        await ExecuteCommandAsync(sfcPath, "/verifyonly");
                         break;
 
                     default:
@@ -286,6 +260,56 @@ namespace DismToolGui
 
             target = $"/Image:\"{mountFolder}\"";
             return true;
+        }
+
+        private bool TryGetPositiveImageIndex(string value, out int index)
+        {
+            if (!int.TryParse(value, out index) || index <= 0)
+            {
+                WriteLog("A positive numeric image index is required.", Color.Red);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryValidateEmptyMountDirectory(string mountDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(mountDirectory) || !Directory.Exists(mountDirectory))
+            {
+                WriteLog("Mount folder not found.", Color.Red);
+                return false;
+            }
+
+            try
+            {
+                if (Directory.EnumerateFileSystemEntries(mountDirectory).Any())
+                {
+                    WriteLog("The mount folder must be empty.", Color.Red);
+                    return false;
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                WriteLog($"Unable to inspect the mount folder: {ex.Message}", Color.Red);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!isExecuting || activeProcess == null)
+                return;
+
+            e.Cancel = true;
+            MessageBox.Show(
+                this,
+                "A servicing command is still running. Wait for it to finish before closing DISM Tool GUI.",
+                "Command in progress",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
 
         private string GetSelectedUnmountOption()
@@ -334,36 +358,63 @@ namespace DismToolGui
                     WriteLog(e.Data, Color.Red);
             };
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            try
+            {
+                activeProcess = process;
+                if (!process.Start())
+                    throw new InvalidOperationException($"Unable to start {exePath}.");
 
-            await Task.Run(() => process.WaitForExit());
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-            if (process.ExitCode == 0)
-                WriteLog("✅ Command completed successfully.", Color.Green);
-            else
-                WriteLog($"❌ Command failed with exit code {process.ExitCode}.", Color.Red);
+                await Task.Run(() => process.WaitForExit());
 
-            return process.ExitCode;
+                if (process.ExitCode == 0)
+                    WriteLog("✅ Command completed successfully.", Color.Green);
+                else
+                    WriteLog($"❌ Command failed with exit code {process.ExitCode}.", Color.Red);
+
+                return process.ExitCode;
+            }
+            finally
+            {
+                if (ReferenceEquals(activeProcess, process))
+                    activeProcess = null;
+            }
         }
 
         private void LaunchMsuExpanderTool()
         {
-            string tempScriptPath = Path.Combine(
-                Path.GetTempPath(),
-                "DismToolGui_MsuExpanderTool.ps1");
-
-            File.WriteAllText(tempScriptPath, GetMsuExpanderScript(), Encoding.UTF8);
-
             var startInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -STA -File \"{tempScriptPath}\"",
-                UseShellExecute = true
+                FileName = powershellPath,
+                Arguments = "-NoProfile -STA -Command -",
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                CreateNoWindow = true
             };
 
-            Process.Start(startInfo);
+            var process = new Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true
+            };
+
+            process.Exited += (sender, args) => process.Dispose();
+
+            try
+            {
+                if (!process.Start())
+                    throw new InvalidOperationException("Unable to start the MSU Expander Tool.");
+
+                process.StandardInput.Write(GetMsuExpanderScript());
+                process.StandardInput.Close();
+            }
+            catch
+            {
+                process.Dispose();
+                throw;
+            }
         }
 
         private string GetMsuExpanderScript()
@@ -372,6 +423,7 @@ namespace DismToolGui
             {
                 "Add-Type -AssemblyName System.Windows.Forms",
                 "Add-Type -AssemblyName System.Drawing",
+                "$ErrorActionPreference = \"Stop\"",
                 "",
                 "# --- Form ---",
                 "$form = New-Object System.Windows.Forms.Form",
@@ -498,7 +550,7 @@ namespace DismToolGui
                 "function Invoke-ExpandProcess {",
                 "    param($sourcePath, $outputFolder)",
                 "",
-                "    $expandExe = \"$env:SystemRoot\\System32\\expand.exe\"",
+                "    $expandExe = [System.IO.Path]::Combine([Environment]::SystemDirectory, \"expand.exe\")",
                 "    $process = Start-Process -FilePath $expandExe -ArgumentList ('\"{0}\" -F:* \"{1}\"' -f $sourcePath, $outputFolder) -NoNewWindow -PassThru",
                 "",
                 "    while (!$process.HasExited) {",
@@ -515,8 +567,8 @@ namespace DismToolGui
                 "function Expand-CAB {",
                 "    param($cabPath, $outputFolder)",
                 "",
-                "    if (!(Test-Path $outputFolder)) {",
-                "        New-Item -ItemType Directory -Path $outputFolder | Out-Null",
+                "    if (!(Test-Path -LiteralPath $outputFolder -PathType Container)) {",
+                "        [System.IO.Directory]::CreateDirectory($outputFolder) | Out-Null",
                 "    }",
                 "",
                 "    Write-Log \"Expanding CAB: $cabPath\"",
@@ -530,18 +582,6 @@ namespace DismToolGui
                 "    $dest = $txtDest.Text",
                 "    $deep = $chkDeep.Checked",
                 "",
-                "    if (!(Test-Path $msu)) {",
-                "        [System.Windows.Forms.MessageBox]::Show(\"Invalid MSU file\")",
-                "        return",
-                "    }",
-                "",
-                "    if (!(Test-Path $dest)) {",
-                "        New-Item -ItemType Directory -Path $dest | Out-Null",
-                "        Write-Log \"Created destination folder\"",
-                "    }",
-                "",
-                "    Write-Log \"Starting MSU expansion...\"",
-                "    $progress.Value = 10",
                 "    $btnExpand.Enabled = $false",
                 "    $txtMSU.Enabled = $false",
                 "    $txtDest.Enabled = $false",
@@ -551,6 +591,46 @@ namespace DismToolGui
                 "    [System.Windows.Forms.Application]::DoEvents()",
                 "",
                 "    try {",
+                "        $msu = $msu.Trim()",
+                "        $dest = $dest.Trim()",
+                "",
+                "        if ([string]::IsNullOrWhiteSpace($msu) -or !(Test-Path -LiteralPath $msu -PathType Leaf)) {",
+                "            throw \"Select an existing MSU file.\"",
+                "        }",
+                "",
+                "        if ([System.IO.Path]::GetExtension($msu) -ine \".msu\") {",
+                "            throw \"The selected source must have an .msu extension.\"",
+                "        }",
+                "",
+                "        if ([string]::IsNullOrWhiteSpace($dest)) {",
+                "            throw \"Select a destination folder.\"",
+                "        }",
+                "",
+                "        if (Test-Path -LiteralPath $dest) {",
+                "            if (!(Test-Path -LiteralPath $dest -PathType Container)) {",
+                "                throw \"The destination path is not a folder.\"",
+                "            }",
+                "        } else {",
+                "            [System.IO.Directory]::CreateDirectory($dest) | Out-Null",
+                "            Write-Log \"Created destination folder\"",
+                "        }",
+                "",
+                "        $dest = [System.IO.Path]::GetFullPath($dest)",
+                "        $cabOutputRoot = Join-Path $dest \"CAB_Extracted\"",
+                "        $cabOutputPrefix = $cabOutputRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar",
+                "        $destinationPrefix = $dest.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar",
+                "        $cabStateBefore = @{}",
+                "",
+                "        if ($deep) {",
+                "            Get-ChildItem -LiteralPath $dest -Filter *.cab -File -Recurse -ErrorAction Stop |",
+                "                Where-Object { !$_.FullName.StartsWith($cabOutputPrefix, [System.StringComparison]::OrdinalIgnoreCase) } |",
+                "                ForEach-Object { $cabStateBefore[$_.FullName] = \"$($_.Length):$($_.LastWriteTimeUtc.Ticks)\" }",
+                "        }",
+                "",
+                "        Write-Log \"Starting MSU expansion...\"",
+                "        $progress.Value = 10",
+                "        [System.Windows.Forms.Application]::DoEvents()",
+                "",
                 "        Invoke-ExpandProcess $msu $dest",
                 "",
                 "        Write-Log \"MSU expanded\"",
@@ -558,13 +638,18 @@ namespace DismToolGui
                 "        [System.Windows.Forms.Application]::DoEvents()",
                 "",
                 "        if ($deep) {",
-                "            $cabFiles = Get-ChildItem $dest -Filter *.cab -Recurse",
+                "            $cabFiles = @(Get-ChildItem -LiteralPath $dest -Filter *.cab -File -Recurse -ErrorAction Stop | Where-Object {",
+                "                !$_.FullName.StartsWith($cabOutputPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and",
+                "                (!$cabStateBefore.ContainsKey($_.FullName) -or $cabStateBefore[$_.FullName] -ne \"$($_.Length):$($_.LastWriteTimeUtc.Ticks)\")",
+                "            })",
                 "            $total = $cabFiles.Count",
                 "            $count = 0",
                 "",
                 "            foreach ($cab in $cabFiles) {",
                 "                $count++",
-                "                $sub = Join-Path $dest \"CAB_Extracted\\$($cab.BaseName)\"",
+                "                $relativeCabPath = $cab.FullName.Substring($destinationPrefix.Length)",
+                "                $relativeOutputPath = [System.IO.Path]::ChangeExtension($relativeCabPath, $null)",
+                "                $sub = Join-Path $cabOutputRoot $relativeOutputPath",
                 "                Expand-CAB $cab.FullName $sub",
                 "",
                 "                if ($total -gt 0) {",
@@ -599,9 +684,23 @@ namespace DismToolGui
 
         private void WriteLog(string message, Color color)
         {
+            if (outputBox == null || outputBox.IsDisposed || IsDisposed || Disposing)
+                return;
+
             if (outputBox.InvokeRequired)
             {
-                outputBox.Invoke(new Action(() => WriteLog(message, color)));
+                try
+                {
+                    outputBox.BeginInvoke(new Action(() => WriteLog(message, color)));
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The form was disposed while process output was arriving.
+                }
+                catch (InvalidOperationException)
+                {
+                    // The window handle was destroyed while process output was arriving.
+                }
                 return;
             }
 
