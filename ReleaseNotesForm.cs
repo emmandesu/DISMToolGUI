@@ -11,6 +11,11 @@ namespace DismToolGui
             "• Added Mounted Image Manager with remount, commit, discard, and cleanup actions\r\n" +
             "• Added live command preview and copy support\r\n" +
             "• Added confirmation prompts for servicing changes\r\n" +
+            "• Added an integrated single-window component toolkit\r\n" +
+            "• Added Component Export, WinSxS search, and Driver File Collector\r\n" +
+            "• Added guarded SFCFix download, verification, packaging, and launch controls\r\n" +
+            "• Added offline Registry Hive Manager and Windows log shortcuts\r\n" +
+            "• Added read-only WIM mounting and shared categorized tool logs\r\n" +
             "• Preserved responsive layouts and readable light/dark themes\r\n\r\n" +
             "Version 1.6.1-stable\r\n\r\n" +
             "• Replaced Extract MSU/CAB with MSU Expander Tool\r\n" +

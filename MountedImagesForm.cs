@@ -19,11 +19,22 @@ namespace DismToolGui
         private readonly Button commitButton;
         private readonly Button discardButton;
         private readonly Button cleanupButton;
+        private readonly Action<string, bool> logSink;
         private bool isBusy;
 
         public MountedImagesForm(bool darkTheme, bool autoRefresh = true)
+            : this(darkTheme, autoRefresh, null, false)
+        {
+        }
+
+        internal MountedImagesForm(
+            bool darkTheme,
+            bool autoRefresh,
+            Action<string, bool> logSink,
+            bool embeddedMode)
         {
             this.darkTheme = darkTheme;
+            this.logSink = logSink;
 
             Text = "Mounted Image Manager";
             ClientSize = new Size(980, 650);
@@ -32,6 +43,8 @@ namespace DismToolGui
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = new Font("Segoe UI", 9F);
+            if (embeddedMode)
+                MinimumSize = Size.Empty;
 
             var root = new TableLayoutPanel
             {
@@ -122,12 +135,20 @@ namespace DismToolGui
             root.Controls.Add(outputBox, 0, 2);
             Controls.Add(root);
 
+            if (logSink != null)
+            {
+                outputBox.Visible = false;
+                root.RowStyles[2] = new RowStyle(SizeType.Absolute, 0F);
+            }
+
             FormClosing += MountedImagesForm_FormClosing;
             if (autoRefresh)
                 Shown += async (sender, args) => await RefreshMountedImagesAsync();
             ApplyTheme(root, toolbar);
             UpdateActionButtons();
         }
+
+        internal bool IsBusy => isBusy;
 
         private static Button CreateButton(string text, int width)
         {
@@ -376,6 +397,12 @@ namespace DismToolGui
 
         private void AppendOutput(string message, bool isError)
         {
+            if (logSink != null)
+            {
+                logSink(message, isError);
+                return;
+            }
+
             outputBox.SelectionStart = outputBox.TextLength;
             outputBox.SelectionLength = 0;
             outputBox.SelectionColor = isError

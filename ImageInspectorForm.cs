@@ -14,13 +14,27 @@ namespace DismToolGui
         private readonly Button browseButton;
         private readonly Button inspectButton;
         private readonly Button useSelectionButton;
+        private readonly Button closeButton;
         private readonly DataGridView imageGrid;
         private readonly RichTextBox outputBox;
+        private readonly bool embeddedMode;
+        private readonly Action<string, bool> logSink;
         private bool isBusy;
 
         public ImageInspectorForm(bool darkTheme, string initialImagePath)
+            : this(darkTheme, initialImagePath, false, null)
+        {
+        }
+
+        internal ImageInspectorForm(
+            bool darkTheme,
+            string initialImagePath,
+            bool embeddedMode,
+            Action<string, bool> logSink)
         {
             this.darkTheme = darkTheme;
+            this.embeddedMode = embeddedMode;
+            this.logSink = logSink;
 
             Text = "WIM / ESD Image Inspector";
             ClientSize = new Size(900, 620);
@@ -29,6 +43,8 @@ namespace DismToolGui
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = new Font("Segoe UI", 9F);
+            if (embeddedMode)
+                MinimumSize = Size.Empty;
 
             var root = new TableLayoutPanel
             {
@@ -130,8 +146,16 @@ namespace DismToolGui
                 Margin = new Padding(0)
             };
 
-            var closeButton = CreateButton("Close", 90);
-            closeButton.DialogResult = DialogResult.Cancel;
+            closeButton = CreateButton("Close", 90);
+            if (embeddedMode)
+            {
+                closeButton.Text = "Back";
+                closeButton.Click += (sender, args) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                closeButton.DialogResult = DialogResult.Cancel;
+            }
 
             useSelectionButton = CreateButton("Use selected index", 155);
             useSelectionButton.Enabled = false;
@@ -146,13 +170,24 @@ namespace DismToolGui
             root.Controls.Add(footer, 0, 3);
             Controls.Add(root);
 
-            CancelButton = closeButton;
+            if (logSink != null)
+            {
+                outputBox.Visible = false;
+                root.RowStyles[2] = new RowStyle(SizeType.Absolute, 0F);
+            }
+
+            if (!embeddedMode)
+                CancelButton = closeButton;
             FormClosing += ImageInspectorForm_FormClosing;
             ApplyTheme(root, pathLayout, footer, pathLabel, closeButton);
         }
 
         public string SelectedImagePath { get; private set; }
         public int SelectedImageIndex { get; private set; }
+        internal string CurrentImagePath => imagePathBox.Text;
+        internal bool IsBusy => isBusy;
+        internal event EventHandler SelectionAccepted;
+        internal event EventHandler CloseRequested;
 
         private static Button CreateButton(string text, int width)
         {
@@ -318,6 +353,12 @@ namespace DismToolGui
 
             SelectedImagePath = imagePathBox.Text.Trim();
             SelectedImageIndex = selected.Index;
+            if (embeddedMode)
+            {
+                SelectionAccepted?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -328,12 +369,19 @@ namespace DismToolGui
             imagePathBox.Enabled = !busy;
             browseButton.Enabled = !busy;
             inspectButton.Enabled = !busy;
+            closeButton.Enabled = !busy;
             imageGrid.Enabled = !busy;
             useSelectionButton.Enabled = !busy && imageGrid.SelectedRows.Count == 1;
         }
 
         private void AppendOutput(string message, bool isError)
         {
+            if (logSink != null)
+            {
+                logSink(message, isError);
+                return;
+            }
+
             outputBox.SelectionStart = outputBox.TextLength;
             outputBox.SelectionLength = 0;
             outputBox.SelectionColor = isError

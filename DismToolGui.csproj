@@ -27,7 +27,11 @@ Version 1.7.0-stable — Image Management
 Added WIM / ESD Image Inspector with selectable indexes
 Added Mounted Image Manager with refresh, remount, commit, discard, and stale cleanup actions
 Added live command preview, copy support, and confirmation prompts
-Preserved responsive layouts and readable light/dark themes across the new dialogs
+Added a single-window component toolkit with Component Export, WinSxS search, and Driver File Collector
+Added guarded SFCFix download, identity verification, package generation, and launch controls
+Added offline registry hive management, Windows log shortcuts, and read-only WIM mounting
+Added shared categorized logs with readable light/dark colors across integrated tools
+Preserved responsive layouts and readable light/dark themes across the integrated workspace
 
 ---
 
@@ -110,6 +114,10 @@ Renamed export destination field for clarity
   <ItemGroup>
     <Content Include="ChatGPT Image Jun 18, 2025, 05_57_16 AM (1).ico" />
     <Content Include="DISM.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\Downloads\2.png">

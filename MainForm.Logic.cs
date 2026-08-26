@@ -9,6 +9,13 @@ using System.Windows.Forms;
 
 namespace DismToolGui
 {
+    internal enum SystemLogKind
+    {
+        Cbs,
+        Dism,
+        SetupApi
+    }
+
     public partial class MainForm : Form
     {
         private void CommandSelector_SelectedIndexChanged(object sender, EventArgs e)
@@ -27,6 +34,7 @@ namespace DismToolGui
                 cmd == "Remove Package";
 
             unmountModeGroup.Visible = cmd == "Unmount WIM";
+            mountReadOnlyCheckBox.Visible = cmd == "Mount WIM";
 
             switch (cmd)
             {
@@ -142,7 +150,11 @@ namespace DismToolGui
                             if (!ConfirmCommandExecution(cmd))
                                 break;
 
-                            await ExecuteCommandAsync($"/Mount-WIM /WimFile:\"{wim}\" /Index:{imageIndex} /MountDir:\"{mount}\"");
+                            string readOnlyArgument = mountReadOnlyCheckBox.Checked
+                                ? " /ReadOnly"
+                                : string.Empty;
+                            await ExecuteCommandAsync(
+                                $"/Mount-WIM /WimFile:\"{wim}\" /Index:{imageIndex} /MountDir:\"{mount}\"{readOnlyArgument}");
                             break;
                         }
 
@@ -322,6 +334,12 @@ namespace DismToolGui
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (toolWorkspace != null && !toolWorkspace.CanCloseApplication())
+            {
+                e.Cancel = true;
+                return;
+            }
+
             if (!isExecuting || activeProcess == null)
                 return;
 
@@ -397,7 +415,8 @@ namespace DismToolGui
                         ? $"{dismPath} {imageTarget} /Cleanup-Image /RestoreHealth"
                         : $"{dismPath} {imageTarget} /Cleanup-Image /RestoreHealth /Source:\"{source}\" /LimitAccess";
                 case "Mount WIM":
-                    return $"{dismPath} /Mount-WIM /WimFile:\"{wim}\" /Index:{index} /MountDir:\"{mount}\"";
+                    return $"{dismPath} /Mount-WIM /WimFile:\"{wim}\" /Index:{index} /MountDir:\"{mount}\"" +
+                           (mountReadOnlyCheckBox?.Checked == true ? " /ReadOnly" : string.Empty);
                 case "Unmount WIM":
                     return $"{dismPath} /Unmount-WIM /MountDir:\"{mount}\" {GetSelectedUnmountOption()}";
                 case "Add Package (CAB)":
@@ -452,33 +471,107 @@ namespace DismToolGui
 
         private void OpenImageInspector()
         {
-            using var inspector = new ImageInspectorForm(
-                isDark,
-                GetFieldText("WIM File Path"));
+            ShowToolWorkspace(ToolWorkspacePage.ImageInspector);
+        }
 
-            if (inspector.ShowDialog(this) != DialogResult.OK)
+        private void OpenMountedImagesManager()
+        {
+            ShowToolWorkspace(ToolWorkspacePage.MountedImages);
+        }
+
+        private void ShowToolWorkspace(ToolWorkspacePage page)
+        {
+            if (isExecuting)
+            {
+                MessageBox.Show(
+                    this,
+                    "Wait for the current command to finish before opening another tool.",
+                    "Command in progress",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            topBarLayout.Visible = false;
+            inputPanel.Visible = false;
+            outputPanel.Visible = false;
+            toolWorkspace.Visible = true;
+            toolWorkspace.BringToFront();
+            AcceptButton = null;
+            toolWorkspace.ShowPage(page);
+        }
+
+        private void HideToolWorkspace()
+        {
+            toolWorkspace.Visible = false;
+            topBarLayout.Visible = true;
+            inputPanel.Visible = true;
+            outputPanel.Visible = true;
+            AcceptButton = runButton;
+            commandSelector.Focus();
+        }
+
+        private void ApplyImageSelection(string imagePath, int imageIndex)
+        {
+            if (string.IsNullOrWhiteSpace(imagePath) || imageIndex <= 0)
                 return;
 
             string selectedCommand = commandSelector.SelectedItem?.ToString();
             if (selectedCommand != "Mount WIM" && selectedCommand != "Export WIM")
             {
-                commandSelector.SelectedItem = Path.GetExtension(inspector.SelectedImagePath)
+                commandSelector.SelectedItem = Path.GetExtension(imagePath)
                     .Equals(".esd", StringComparison.OrdinalIgnoreCase)
                     ? "Export WIM"
                     : "Mount WIM";
             }
 
-            inputFields["WIM File Path"].TextBox.Text = inspector.SelectedImagePath;
-            inputFields["Index"].TextBox.Text = inspector.SelectedImageIndex.ToString();
-            WriteLog(
-                $"Selected image index {inspector.SelectedImageIndex} from {inspector.SelectedImagePath}.",
-                Color.LightBlue);
+            inputFields["WIM File Path"].TextBox.Text = imagePath;
+            inputFields["Index"].TextBox.Text = imageIndex.ToString();
+            WriteLog($"Selected image index {imageIndex} from {imagePath}.", Color.LightBlue);
         }
 
-        private void OpenMountedImagesManager()
+        private void OpenSystemLog(SystemLogKind logKind)
         {
-            using var manager = new MountedImagesForm(isDark);
-            manager.ShowDialog(this);
+            string windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string path;
+            switch (logKind)
+            {
+                case SystemLogKind.Cbs:
+                    path = Path.Combine(windows, "Logs", "CBS", "CBS.log");
+                    break;
+                case SystemLogKind.Dism:
+                    path = Path.Combine(windows, "Logs", "DISM", "dism.log");
+                    break;
+                case SystemLogKind.SetupApi:
+                    path = Path.Combine(windows, "INF", "setupapi.dev.log");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(logKind), logKind, null);
+            }
+
+            if (!File.Exists(path))
+            {
+                MessageBox.Show(this, $"Log file not found:{Environment.NewLine}{path}",
+                    "Log not found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.Combine(Environment.SystemDirectory, "notepad.exe"),
+                    Arguments = ToolkitProcessRunner.QuoteArgument(path),
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex) when (
+                ex is System.ComponentModel.Win32Exception ||
+                ex is InvalidOperationException)
+            {
+                MessageBox.Show(this, ex.Message, "Unable to open log",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private Task<int> ExecuteCommandAsync(string arguments)

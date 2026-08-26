@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)
 ![Framework](https://img.shields.io/badge/framework-.NET%20Framework%204.8-512bd4)
 
-DISM Tool GUI is a Windows desktop front end for common **DISM** and **System File Checker** operations. It combines guided inputs, live output, image inspection, mounted-image management, and command previews in one responsive light/dark interface.
+DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File Checker**, component recovery, and offline-registry operations. It combines guided inputs, live output, image management, component export, and diagnostic tools in one responsive light/dark interface.
 
 ![DISM Tool GUI showing RestoreHealth and its command preview](docs/screenshots/restorehealth-command-preview.png)
 
@@ -32,7 +32,7 @@ DISM Tool GUI is a Windows desktop front end for common **DISM** and **System Fi
 
 ### WIM / ESD Image Inspector
 
-Open **Tools → WIM / ESD Image Inspector** to:
+Open **Tools → Image Servicing → WIM / ESD Image Inspector** to:
 
 - view every image index in a WIM or ESD file;
 - compare edition name, description, architecture, version, and size;
@@ -41,7 +41,7 @@ Open **Tools → WIM / ESD Image Inspector** to:
 
 ### Mounted Image Manager
 
-Open **Tools → Mounted Image Manager** to:
+Open **Tools → Image Servicing → Mounted Image Manager** to:
 
 - refresh the list of mounted Windows images;
 - view image file, index, access mode, mount directory, and status;
@@ -50,6 +50,27 @@ Open **Tools → Mounted Image Manager** to:
 - commit or discard changes while unmounting;
 - clean resources belonging to corrupted, unrecoverable mount points.
 
+Both image tools are hosted inside the main application workspace. WIM images can also be mounted read-only from the standard **Mount WIM** workflow.
+
+### Integrated component toolkit
+
+Open **Tools → Component Toolkit** for:
+
+- **Component Export** — search every matching WinSxS component version, copy the selected payload and manifests into an isolated export, optionally export matching registry branches, and create an SFCFix package;
+- **WinSxS File Search** — search recursively for an exact filename and copy either its component identity or complete path;
+- **Driver File Collector** — preview matching DriverStore and WinSxS folders with estimated sizes, then copy them into a new timestamped destination without clearing earlier exports;
+- **SFCFix Package & Run** — download or select SFCFix, review its SHA-256 and Authenticode status, select a generated package, and launch it only after an explicit warning.
+
+Every component tool uses the same in-window workspace and shared themed log. File searches and copies can be cancelled, and cancelled exports leave their partial timestamped folder visible for inspection rather than deleting it automatically.
+
+### Registry Hive Manager
+
+Open **Tools → Advanced → Registry Hive Manager** to load offline registry files under a validated `HKLM` or `HKU` mount name, open them in Registry Editor, and unload them safely. The app tracks hives it loaded during the current session and prevents shutdown while one remains mounted.
+
+### Windows logs
+
+Use **Tools → Logs** to open `CBS.log`, `DISM.log`, or `SetupAPI.dev.log` from their standard Windows locations.
+
 ### Command safety
 
 - Live preview updates as command fields and options change.
@@ -57,6 +78,9 @@ Open **Tools → Mounted Image Manager** to:
 - Servicing changes require confirmation by default.
 - Destructive mount actions use confirmation dialogs with the affected path.
 - The main window cannot close while a servicing command is active.
+- Component and hive exports always use a new timestamped folder and never erase an existing export root.
+- Registry hives can only be unloaded by the app when they were loaded by the current app session.
+- SFCFix downloads never execute automatically and display source, hash, and signature information before launch.
 
 ### MSU Expander Tool
 
@@ -89,12 +113,17 @@ Open **Tools → Mounted Image Manager** to:
 | MSU Expander Tool | Package file | Extracts MSU contents and optionally expands nested CAB payloads |
 | SFC - Scannow | Online | Verifies protected system files and repairs detected problems |
 | SFC - VerifyOnly | Online | Verifies protected system files without performing repairs |
+| Component Export | WinSxS and registry | Exports a selected component version, manifests, optional registry keys, and repair package |
+| WinSxS File Search | WinSxS folder | Finds an exact filename and reports component identities and full paths |
+| Driver File Collector | DriverStore and WinSxS | Previews and collects matching folders into an isolated export |
+| SFCFix Package & Run | Repair package | Downloads or selects SFCFix, verifies file identity details, and launches a selected package after confirmation |
+| Registry Hive Manager | Offline registry file | Loads, opens, tracks, and unloads offline hives under HKLM or HKU |
 
 ## Common workflows
 
 ### Inspect and export an image
 
-1. Open **Tools → WIM / ESD Image Inspector**.
+1. Open **Tools → Image Servicing → WIM / ESD Image Inspector**.
 2. Browse to the source image and select **Inspect**.
 3. Select the required edition and choose **Use selected index**.
 4. The main window opens the appropriate Mount or Export workflow with the image and index filled in.
@@ -105,7 +134,7 @@ Open **Tools → Mounted Image Manager** to:
 1. Create an empty mount directory.
 2. Select **Mount WIM**, provide the WIM file and index, and mount it.
 3. Select a supported operation and choose **Offline (use Mount Folder)**.
-4. When servicing is complete, open **Mounted Image Manager** or select **Unmount WIM**.
+4. When servicing is complete, open **Tools → Image Servicing → Mounted Image Manager** or select **Unmount WIM**.
 5. Choose **Commit** to save changes or **Discard** to abandon them.
 
 ### Repair Windows with a source image
@@ -131,6 +160,8 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 - **Commit** writes changes to the image; **Discard** permanently abandons uncommitted changes.
 - Do not shut down Windows or terminate DISM while an operation is running.
 - **Clean stale mounts** is intended for corrupted, unrecoverable mount points; healthy or recoverable mounts should be handled normally.
+- Unload every offline registry hive before closing the application or touching its backing file.
+- SFCFix is third-party software. Confirm the displayed source, SHA-256, and signature status before running it, and save your work because it may reboot Windows.
 - Only download releases from this repository or another source you trust—the application runs elevated.
 
 ## Troubleshooting
@@ -141,6 +172,9 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 | A WIM will not mount | Confirm the file exists, the index is positive, and the mount directory is empty |
 | A mounted image is inaccessible | Open Mounted Image Manager, refresh the list, and try **Remount** |
 | RestoreHealth or package servicing fails | Review the live output and open `CBS.log` from the main window |
+| A component search takes a long time | WinSxS searches and size calculations can be cancelled safely from the tool workspace |
+| A hive will not unload | Close Registry Editor and any process using the mounted key, then try again |
+| SFCFix shows an untrusted signature | Do not run it until you have independently verified the displayed source and SHA-256 |
 | Text is difficult to read | Switch between light and dark mode; existing log entries are recolored automatically |
 | UAC appears every time | This is expected because the application manifest requires administrator privileges |
 
@@ -148,7 +182,9 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 
 - **Get Installed Packages** currently queries the running system only.
 - Active servicing commands cannot be cancelled from the GUI; this avoids interrupting DISM during a critical write operation.
-- The package installation workflow currently exposes CAB files, while MSU files are handled by the separate expansion tool.
+- Component-tool searches and file copies can be cancelled; active DISM servicing commands remain intentionally non-cancellable.
+- SFCFix is an external interactive utility and may open its own console after it is launched from the integrated workspace.
+- The package installation workflow currently exposes CAB files, while MSU files are handled by the expansion tool.
 
 ## Feedback and issues
 

@@ -29,6 +29,8 @@ namespace DismToolGui
         private TextBox commandPreviewBox;
         private Button copyCommandButton;
         private CheckBox confirmCommandCheckBox;
+        private CheckBox mountReadOnlyCheckBox;
+        private ToolWorkspaceControl toolWorkspace;
 
         private Dictionary<string, (Label Label, TextBox TextBox)> inputFields;
 
@@ -41,8 +43,17 @@ namespace DismToolGui
         private ToolStripMenuItem exportLogMenuItem;
         private ToolStripMenuItem releaseNotesMenuItem;
         private ToolStripMenuItem toolsMenuItem;
+        private ToolStripMenuItem imageServicingMenuItem;
+        private ToolStripMenuItem componentToolkitMenuItem;
+        private ToolStripMenuItem logsMenuItem;
+        private ToolStripMenuItem advancedToolsMenuItem;
         private ToolStripMenuItem imageInspectorMenuItem;
         private ToolStripMenuItem mountedImagesMenuItem;
+        private ToolStripMenuItem componentExportMenuItem;
+        private ToolStripMenuItem winSxsSearchMenuItem;
+        private ToolStripMenuItem driverCollectorMenuItem;
+        private ToolStripMenuItem sfcFixMenuItem;
+        private ToolStripMenuItem registryHiveMenuItem;
 
         private GroupBox imageTypeGroup;
         private RadioButton radioOnline;
@@ -297,6 +308,18 @@ namespace DismToolGui
                 { "Destination Image File", AddLabeledField("Destination Image File:") }
             };
 
+            mountReadOnlyCheckBox = new CheckBox
+            {
+                Text = "Mount image read-only",
+                Checked = true,
+                AutoSize = true,
+                Visible = false,
+                Margin = new Padding(0, 6, 0, 4)
+            };
+            mountReadOnlyCheckBox.CheckedChanged += (sender, args) => UpdateCommandPreview();
+            inputPanel.Controls.Add(mountReadOnlyCheckBox);
+            inputPanel.SetColumnSpan(mountReadOnlyCheckBox, 2);
+
             InitializeCommandPreview();
 
             rootLayout.Controls.Add(inputPanel, 0, 2);
@@ -321,6 +344,21 @@ namespace DismToolGui
 
             outputPanel.Controls.Add(outputBox);
             rootLayout.Controls.Add(outputPanel, 0, 3);
+
+            toolWorkspace = new ToolWorkspaceControl(
+                isDark,
+                () => GetFieldText("WIM File Path"),
+                ApplyImageSelection);
+            toolWorkspace.Visible = false;
+            toolWorkspace.BackRequested += (sender, args) => HideToolWorkspace();
+            toolWorkspace.ThemeToggleRequested += (sender, args) =>
+            {
+                isDark = !isDark;
+                ApplyTheme(isDark);
+                themeToggleButton.Text = isDark ? "Light mode" : "Dark mode";
+            };
+            rootLayout.Controls.Add(toolWorkspace, 0, 1);
+            rootLayout.SetRowSpan(toolWorkspace, 3);
 
             versionLabel = new Label
             {
@@ -358,16 +396,65 @@ namespace DismToolGui
             imageInspectorMenuItem = new ToolStripMenuItem(
                 "WIM / ESD Image Inspector",
                 null,
-                (s, e) => OpenImageInspector());
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.ImageInspector));
 
             mountedImagesMenuItem = new ToolStripMenuItem(
                 "Mounted Image Manager",
                 null,
-                (s, e) => OpenMountedImagesManager());
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.MountedImages));
+
+            componentExportMenuItem = new ToolStripMenuItem(
+                "Component Export",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.ComponentExport));
+
+            winSxsSearchMenuItem = new ToolStripMenuItem(
+                "WinSxS File Search",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.WinSxsSearch));
+
+            driverCollectorMenuItem = new ToolStripMenuItem(
+                "Driver File Collector",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.DriverCollector));
+
+            sfcFixMenuItem = new ToolStripMenuItem(
+                "SFCFix Package && Run",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.SfcFix));
+
+            registryHiveMenuItem = new ToolStripMenuItem(
+                "Registry Hive Manager",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.RegistryHives));
+
+            imageServicingMenuItem = new ToolStripMenuItem("Image Servicing");
+            imageServicingMenuItem.DropDownItems.Add(imageInspectorMenuItem);
+            imageServicingMenuItem.DropDownItems.Add(mountedImagesMenuItem);
+
+            componentToolkitMenuItem = new ToolStripMenuItem("Component Toolkit");
+            componentToolkitMenuItem.DropDownItems.Add(componentExportMenuItem);
+            componentToolkitMenuItem.DropDownItems.Add(winSxsSearchMenuItem);
+            componentToolkitMenuItem.DropDownItems.Add(driverCollectorMenuItem);
+            componentToolkitMenuItem.DropDownItems.Add(new ToolStripSeparator());
+            componentToolkitMenuItem.DropDownItems.Add(sfcFixMenuItem);
+
+            logsMenuItem = new ToolStripMenuItem("Logs");
+            logsMenuItem.DropDownItems.Add(new ToolStripMenuItem(
+                "Open CBS.log", null, (s, e) => OpenSystemLog(SystemLogKind.Cbs)));
+            logsMenuItem.DropDownItems.Add(new ToolStripMenuItem(
+                "Open DISM.log", null, (s, e) => OpenSystemLog(SystemLogKind.Dism)));
+            logsMenuItem.DropDownItems.Add(new ToolStripMenuItem(
+                "Open SetupAPI.dev.log", null, (s, e) => OpenSystemLog(SystemLogKind.SetupApi)));
+
+            advancedToolsMenuItem = new ToolStripMenuItem("Advanced");
+            advancedToolsMenuItem.DropDownItems.Add(registryHiveMenuItem);
 
             toolsMenuItem = new ToolStripMenuItem("Tools");
-            toolsMenuItem.DropDownItems.Add(imageInspectorMenuItem);
-            toolsMenuItem.DropDownItems.Add(mountedImagesMenuItem);
+            toolsMenuItem.DropDownItems.Add(imageServicingMenuItem);
+            toolsMenuItem.DropDownItems.Add(componentToolkitMenuItem);
+            toolsMenuItem.DropDownItems.Add(logsMenuItem);
+            toolsMenuItem.DropDownItems.Add(advancedToolsMenuItem);
 
             exportLogMenuItem = new ToolStripMenuItem("Export Log", null, (s, e) =>
             {
@@ -525,6 +612,8 @@ namespace DismToolGui
             copyCommandButton.ForeColor = foreground;
             confirmCommandCheckBox.BackColor = panelBackground;
             confirmCommandCheckBox.ForeColor = foreground;
+            mountReadOnlyCheckBox.BackColor = panelBackground;
+            mountReadOnlyCheckBox.ForeColor = foreground;
 
             runButton.BackColor = dark ? Color.Teal : Color.LightGray;
             runButton.ForeColor = foreground;
@@ -563,6 +652,8 @@ namespace DismToolGui
                 field.TextBox.BackColor = textboxBg;
                 field.TextBox.ForeColor = textboxFg;
             }
+
+            toolWorkspace?.ApplyTheme(dark);
         }
 
         private Color ResolveLogColor(Color requestedColor, bool dark)
