@@ -76,6 +76,7 @@ namespace DismToolGui
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = "DISM Tool GUI";
+            ApplyApplicationIcon();
             ClientSize = new Size(900, 720);
             MinimumSize = new Size(800, 640);
             StartPosition = FormStartPosition.CenterScreen;
@@ -598,25 +599,33 @@ namespace DismToolGui
 
             menuStrip.BackColor = menuBackground;
             menuStrip.ForeColor = foreground;
+            menuStrip.Renderer = new ToolStripProfessionalRenderer(
+                new ThemedMenuColorTable(dark));
             foreach (ToolStripItem item in menuStrip.Items)
                 ApplyMenuItemTheme(item, menuBackground, foreground);
 
+            Color busyForeground = dark
+                ? Color.FromArgb(155, 155, 155)
+                : Color.DimGray;
+            Color controlForeground = isExecuting ? busyForeground : foreground;
+            Color inputForeground = isExecuting ? busyForeground : textboxFg;
+
             commandSelector.BackColor = textboxBg;
-            commandSelector.ForeColor = textboxFg;
+            commandSelector.ForeColor = inputForeground;
 
             commandPreviewGroup.BackColor = panelBackground;
-            commandPreviewGroup.ForeColor = foreground;
+            commandPreviewGroup.ForeColor = controlForeground;
             commandPreviewBox.BackColor = textboxBg;
-            commandPreviewBox.ForeColor = textboxFg;
+            commandPreviewBox.ForeColor = inputForeground;
             copyCommandButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-            copyCommandButton.ForeColor = foreground;
+            copyCommandButton.ForeColor = controlForeground;
             confirmCommandCheckBox.BackColor = panelBackground;
-            confirmCommandCheckBox.ForeColor = foreground;
+            confirmCommandCheckBox.ForeColor = controlForeground;
             mountReadOnlyCheckBox.BackColor = panelBackground;
-            mountReadOnlyCheckBox.ForeColor = foreground;
+            mountReadOnlyCheckBox.ForeColor = controlForeground;
 
             runButton.BackColor = dark ? Color.Teal : Color.LightGray;
-            runButton.ForeColor = foreground;
+            runButton.ForeColor = controlForeground;
 
             themeToggleButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
             themeToggleButton.ForeColor = foreground;
@@ -630,27 +639,27 @@ namespace DismToolGui
             RecolorLog(dark);
 
             imageTypeGroup.BackColor = panelBackground;
-            imageTypeGroup.ForeColor = foreground;
+            imageTypeGroup.ForeColor = controlForeground;
             radioOnline.BackColor = panelBackground;
-            radioOnline.ForeColor = textboxFg;
+            radioOnline.ForeColor = inputForeground;
             radioOffline.BackColor = panelBackground;
-            radioOffline.ForeColor = textboxFg;
+            radioOffline.ForeColor = inputForeground;
 
             unmountModeGroup.BackColor = panelBackground;
-            unmountModeGroup.ForeColor = foreground;
+            unmountModeGroup.ForeColor = controlForeground;
             radioUnmountDiscard.BackColor = panelBackground;
-            radioUnmountDiscard.ForeColor = textboxFg;
+            radioUnmountDiscard.ForeColor = inputForeground;
             radioUnmountCommit.BackColor = panelBackground;
-            radioUnmountCommit.ForeColor = textboxFg;
+            radioUnmountCommit.ForeColor = inputForeground;
             radioUnmountAppend.BackColor = panelBackground;
-            radioUnmountAppend.ForeColor = textboxFg;
+            radioUnmountAppend.ForeColor = inputForeground;
 
             foreach (var field in inputFields.Values)
             {
                 field.Label.BackColor = panelBackground;
-                field.Label.ForeColor = foreground;
+                field.Label.ForeColor = controlForeground;
                 field.TextBox.BackColor = textboxBg;
-                field.TextBox.ForeColor = textboxFg;
+                field.TextBox.ForeColor = inputForeground;
             }
 
             toolWorkspace?.ApplyTheme(dark);
@@ -687,8 +696,90 @@ namespace DismToolGui
 
             menuItem.DropDown.BackColor = background;
             menuItem.DropDown.ForeColor = foreground;
+            if (menuItem.DropDown is ToolStripDropDownMenu dropDownMenu)
+            {
+                dropDownMenu.ShowImageMargin = false;
+                dropDownMenu.ShowCheckMargin = false;
+            }
+
             foreach (ToolStripItem child in menuItem.DropDownItems)
                 ApplyMenuItemTheme(child, background, foreground);
+        }
+
+        private void ApplyApplicationIcon()
+        {
+            try
+            {
+                using (Icon executableIcon = Icon.ExtractAssociatedIcon(
+                    typeof(MainForm).Assembly.Location))
+                {
+                    if (executableIcon != null)
+                        Icon = (Icon)executableIcon.Clone();
+                }
+            }
+            catch (ArgumentException)
+            {
+                // Keep the platform default if the executable icon cannot be read.
+            }
+        }
+
+        private void SetExecutionUiState(bool executing)
+        {
+            isExecuting = executing;
+            bool inputsEnabled = !executing;
+
+            runButton.Enabled = inputsEnabled;
+            commandSelector.Enabled = inputsEnabled;
+            radioOnline.Enabled = inputsEnabled;
+            radioOffline.Enabled = inputsEnabled;
+            radioUnmountDiscard.Enabled = inputsEnabled;
+            radioUnmountCommit.Enabled = inputsEnabled;
+            radioUnmountAppend.Enabled = inputsEnabled;
+            mountReadOnlyCheckBox.Enabled = inputsEnabled;
+            confirmCommandCheckBox.Enabled = inputsEnabled;
+            toolsMenuItem.Enabled = inputsEnabled;
+
+            foreach (var field in inputFields.Values)
+            {
+                field.TextBox.ReadOnly = executing;
+                field.TextBox.TabStop = inputsEnabled;
+            }
+
+            runButton.Text = executing ? "Running..." : "Execute";
+            UpdateCommandPreview();
+            ApplyTheme(isDark);
+        }
+
+        private sealed class ThemedMenuColorTable : ProfessionalColorTable
+        {
+            private readonly Color background;
+            private readonly Color selectedBackground;
+            private readonly Color border;
+            private readonly Color separator;
+
+            public ThemedMenuColorTable(bool dark)
+            {
+                UseSystemColors = false;
+                background = dark ? Color.FromArgb(35, 35, 35) : Color.Gainsboro;
+                selectedBackground = dark ? Color.FromArgb(64, 64, 64) : Color.Silver;
+                border = dark ? Color.FromArgb(82, 82, 82) : Color.DarkGray;
+                separator = dark ? Color.FromArgb(95, 95, 95) : Color.DarkGray;
+            }
+
+            public override Color ToolStripDropDownBackground => background;
+            public override Color ImageMarginGradientBegin => background;
+            public override Color ImageMarginGradientMiddle => background;
+            public override Color ImageMarginGradientEnd => background;
+            public override Color MenuItemSelected => selectedBackground;
+            public override Color MenuItemSelectedGradientBegin => selectedBackground;
+            public override Color MenuItemSelectedGradientEnd => selectedBackground;
+            public override Color MenuItemPressedGradientBegin => selectedBackground;
+            public override Color MenuItemPressedGradientMiddle => selectedBackground;
+            public override Color MenuItemPressedGradientEnd => selectedBackground;
+            public override Color MenuItemBorder => border;
+            public override Color MenuBorder => border;
+            public override Color SeparatorDark => separator;
+            public override Color SeparatorLight => background;
         }
 
         private void RecolorLog(bool dark)

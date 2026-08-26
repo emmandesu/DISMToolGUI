@@ -107,11 +107,7 @@ namespace DismToolGui
             string pkg = GetFieldText("Package Name to Remove");
             string destinationImage = GetFieldText("Destination Image File");
 
-            isExecuting = true;
-            runButton.Enabled = false;
-            commandSelector.Enabled = false;
-            imageTypeGroup.Enabled = false;
-            unmountModeGroup.Enabled = false;
+            SetExecutionUiState(true);
 
             try
             {
@@ -268,11 +264,7 @@ namespace DismToolGui
             }
             finally
             {
-                isExecuting = false;
-                runButton.Enabled = true;
-                commandSelector.Enabled = true;
-                imageTypeGroup.Enabled = true;
-                unmountModeGroup.Enabled = true;
+                SetExecutionUiState(false);
             }
         }
 
@@ -368,6 +360,7 @@ namespace DismToolGui
             string selectedCommand = commandSelector?.SelectedItem?.ToString();
             commandPreviewBox.Text = BuildCommandPreview(selectedCommand);
             copyCommandButton.Enabled =
+                !isExecuting &&
                 !string.IsNullOrWhiteSpace(commandPreviewBox.Text) &&
                 selectedCommand != "MSU Expander Tool";
         }
