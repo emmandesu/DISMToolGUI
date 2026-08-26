@@ -730,13 +730,13 @@ namespace DismToolGui
 
             runButton.Enabled = inputsEnabled;
             commandSelector.Enabled = inputsEnabled;
-            radioOnline.Enabled = inputsEnabled;
-            radioOffline.Enabled = inputsEnabled;
-            radioUnmountDiscard.Enabled = inputsEnabled;
-            radioUnmountCommit.Enabled = inputsEnabled;
-            radioUnmountAppend.Enabled = inputsEnabled;
-            mountReadOnlyCheckBox.Enabled = inputsEnabled;
-            confirmCommandCheckBox.Enabled = inputsEnabled;
+            SetChoiceControlState(radioOnline, inputsEnabled);
+            SetChoiceControlState(radioOffline, inputsEnabled);
+            SetChoiceControlState(radioUnmountDiscard, inputsEnabled);
+            SetChoiceControlState(radioUnmountCommit, inputsEnabled);
+            SetChoiceControlState(radioUnmountAppend, inputsEnabled);
+            SetChoiceControlState(mountReadOnlyCheckBox, inputsEnabled);
+            SetChoiceControlState(confirmCommandCheckBox, inputsEnabled);
             toolsMenuItem.Enabled = inputsEnabled;
 
             foreach (var field in inputFields.Values)
@@ -748,6 +748,27 @@ namespace DismToolGui
             runButton.Text = executing ? "Running..." : "Execute";
             UpdateCommandPreview();
             ApplyTheme(isDark);
+        }
+
+        private static void SetChoiceControlState(
+            CheckBox choiceControl,
+            bool interactive)
+        {
+            // Native disabled rendering ignores ForeColor and draws almost-black
+            // text on the dark theme. AutoCheck locks the value while allowing
+            // the themed gray foreground to remain readable.
+            choiceControl.Enabled = true;
+            choiceControl.AutoCheck = interactive;
+            choiceControl.TabStop = interactive;
+        }
+
+        private static void SetChoiceControlState(
+            RadioButton choiceControl,
+            bool interactive)
+        {
+            choiceControl.Enabled = true;
+            choiceControl.AutoCheck = interactive;
+            choiceControl.TabStop = interactive;
         }
 
         private sealed class ThemedMenuColorTable : ProfessionalColorTable

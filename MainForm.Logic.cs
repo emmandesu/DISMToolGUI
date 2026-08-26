@@ -360,7 +360,6 @@ namespace DismToolGui
             string selectedCommand = commandSelector?.SelectedItem?.ToString();
             commandPreviewBox.Text = BuildCommandPreview(selectedCommand);
             copyCommandButton.Enabled =
-                !isExecuting &&
                 !string.IsNullOrWhiteSpace(commandPreviewBox.Text) &&
                 selectedCommand != "MSU Expander Tool";
         }
