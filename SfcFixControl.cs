@@ -14,6 +14,8 @@ namespace DismToolGui
     {
         private const string DownloadUrl =
             "https://www.sysnative.com/niemiro/apps/SFCFix.exe";
+        private const string ProjectUrl =
+            "https://github.com/emmandesu/DISMToolGUI";
 
         private readonly TextBox executableBox;
         private readonly TextBox packageBox;
@@ -200,6 +202,9 @@ namespace DismToolGui
                 Directory.CreateDirectory(Path.GetDirectoryName(destination));
                 using var client = new WebClient();
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                client.Headers[HttpRequestHeader.UserAgent] = GetDownloadUserAgent();
+                client.Headers[HttpRequestHeader.Accept] =
+                    "application/x-msdownload, application/octet-stream;q=0.9, */*;q=0.8";
                 client.DownloadProgressChanged += (sender, args) =>
                 {
                     int progress = Math.Max(0, Math.Min(100, args.ProgressPercentage));
@@ -256,6 +261,15 @@ namespace DismToolGui
 
             if (File.Exists(destination))
                 await VerifyAsync(false);
+        }
+
+        private static string GetDownloadUserAgent()
+        {
+            Version version = typeof(SfcFixControl).Assembly.GetName().Version;
+            string productVersion = version == null
+                ? "unknown"
+                : $"{version.Major}.{version.Minor}.{version.Build}";
+            return $"DISMToolGUI/{productVersion} (+{ProjectUrl})";
         }
 
         private async Task<bool> VerifyAsync(bool showDialog)

@@ -11,7 +11,8 @@ namespace DismToolGui
             "• Removed the blank image gutter from the Tools dropdown\r\n" +
             "• Improved menu hover, pressed, border, and separator colors in light and dark modes\r\n" +
             "• Fixed native disabled-state rendering that made radio-button and checkbox text unreadable in dark mode\r\n" +
-            "• Kept command choices locked during execution and restored normal interaction afterward\r\n\r\n" +
+            "• Kept command choices locked during execution and restored normal interaction afterward\r\n" +
+            "• Fixed SFCFix downloads rejected by Sysnative with HTTP 403\r\n\r\n" +
             "Version 1.8.0-stable\r\n\r\n" +
             "• Added a single-window Tools workspace for image, component, driver, SFCFix, and registry operations\r\n" +
             "• Added Component Export, WinSxS search, and Driver File Collector\r\n" +

@@ -29,6 +29,7 @@ Removed the blank image gutter from the Tools dropdown
 Improved menu hover, pressed, border, and separator colors in light and dark modes
 Fixed native disabled-state rendering that made radio-button and checkbox text unreadable in dark mode
 Kept command choices locked during execution and restored normal interaction afterward
+Fixed SFCFix downloads rejected by Sysnative with HTTP 403
 
 ---
 
