@@ -12,7 +12,8 @@ namespace DismToolGui
             "• Improved menu hover, pressed, border, and separator colors in light and dark modes\r\n" +
             "• Fixed native disabled-state rendering that made radio-button and checkbox text unreadable in dark mode\r\n" +
             "• Kept command choices locked during execution and restored normal interaction afterward\r\n" +
-            "• Fixed SFCFix downloads rejected by Sysnative with HTTP 403\r\n\r\n" +
+            "• Fixed SFCFix downloads rejected by Sysnative with HTTP 403\r\n" +
+            "• Expanded Add Package with CAB/MSU browsing and manual path entry\r\n\r\n" +
             "Version 1.8.0-stable\r\n\r\n" +
             "• Added a single-window Tools workspace for image, component, driver, SFCFix, and registry operations\r\n" +
             "• Added Component Export, WinSxS search, and Driver File Collector\r\n" +

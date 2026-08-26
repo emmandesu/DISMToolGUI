@@ -29,7 +29,7 @@ namespace DismToolGui
             string cmd = commandSelector.SelectedItem?.ToString();
 
             imageTypeGroup.Visible =
-                cmd == "Add Package (CAB)" ||
+                cmd == "Add Package (CAB / MSU)" ||
                 cmd == "Run RestoreHealth" ||
                 cmd == "Remove Package";
 
@@ -45,11 +45,11 @@ namespace DismToolGui
                         SetFieldVisibility("Source Path");
                     break;
 
-                case "Add Package (CAB)":
+                case "Add Package (CAB / MSU)":
                     if (radioOffline.Checked)
-                        SetFieldVisibility("CAB File Path", "Mount Folder");
+                        SetFieldVisibility("Package File Path", "Mount Folder");
                     else
-                        SetFieldVisibility("CAB File Path");
+                        SetFieldVisibility("Package File Path");
                     break;
 
                 case "Remove Package":
@@ -103,7 +103,8 @@ namespace DismToolGui
             string idx = GetFieldText("Index");
             string mount = GetFieldText("Mount Folder");
             string src = GetFieldText("Source Path");
-            string cab = GetFieldText("CAB File Path");
+            string packageFile = NormalizeFilePathInput(
+                GetFieldText("Package File Path"));
             string pkg = GetFieldText("Package Name to Remove");
             string destinationImage = GetFieldText("Destination Image File");
 
@@ -170,11 +171,19 @@ namespace DismToolGui
                             break;
                         }
 
-                    case "Add Package (CAB)":
+                    case "Add Package (CAB / MSU)":
                         {
-                            if (string.IsNullOrWhiteSpace(cab) || !File.Exists(cab))
+                            if (string.IsNullOrWhiteSpace(packageFile) || !File.Exists(packageFile))
                             {
-                                WriteLog("CAB file not found.", Color.Red);
+                                WriteLog("CAB or MSU package file not found.", Color.Red);
+                                break;
+                            }
+
+                            string packageExtension = Path.GetExtension(packageFile);
+                            if (!packageExtension.Equals(".cab", StringComparison.OrdinalIgnoreCase) &&
+                                !packageExtension.Equals(".msu", StringComparison.OrdinalIgnoreCase))
+                            {
+                                WriteLog("The package file must use the .cab or .msu extension.", Color.Red);
                                 break;
                             }
 
@@ -184,7 +193,7 @@ namespace DismToolGui
                             if (!ConfirmCommandExecution(cmd))
                                 break;
 
-                            await ExecuteCommandAsync($"{targetImage} /Add-Package /PackagePath:\"{cab}\"");
+                            await ExecuteCommandAsync($"{targetImage} /Add-Package /PackagePath:\"{packageFile}\"");
                             break;
                         }
 
@@ -391,7 +400,9 @@ namespace DismToolGui
             string index = PreviewValue(GetFieldText("Index"), "<index>");
             string mount = PreviewValue(GetFieldText("Mount Folder"), "<mount folder>");
             string source = GetFieldText("Source Path");
-            string cab = PreviewValue(GetFieldText("CAB File Path"), "<CAB file>");
+            string packageFile = PreviewValue(
+                NormalizeFilePathInput(GetFieldText("Package File Path")),
+                "<CAB or MSU file>");
             string package = PreviewValue(GetFieldText("Package Name to Remove"), "<package name>");
             string destination = PreviewValue(
                 GetFieldText("Destination Image File"),
@@ -411,8 +422,8 @@ namespace DismToolGui
                            (mountReadOnlyCheckBox?.Checked == true ? " /ReadOnly" : string.Empty);
                 case "Unmount WIM":
                     return $"{dismPath} /Unmount-WIM /MountDir:\"{mount}\" {GetSelectedUnmountOption()}";
-                case "Add Package (CAB)":
-                    return $"{dismPath} {imageTarget} /Add-Package /PackagePath:\"{cab}\"";
+                case "Add Package (CAB / MSU)":
+                    return $"{dismPath} {imageTarget} /Add-Package /PackagePath:\"{packageFile}\"";
                 case "Get Installed Packages":
                     return $"{dismPath} /Online /Get-Packages";
                 case "Remove Package":
@@ -435,6 +446,14 @@ namespace DismToolGui
             return string.IsNullOrWhiteSpace(value) ? placeholder : value;
         }
 
+        private static string NormalizeFilePathInput(string value)
+        {
+            string path = (value ?? string.Empty).Trim();
+            if (path.Length >= 2 && path[0] == '"' && path[path.Length - 1] == '"')
+                path = path.Substring(1, path.Length - 2).Trim();
+            return path;
+        }
+
         private bool ConfirmCommandExecution(string command)
         {
             if (confirmCommandCheckBox?.Checked != true || !RequiresConfirmation(command))
@@ -455,7 +474,7 @@ namespace DismToolGui
             return command == "Run RestoreHealth" ||
                    command == "Mount WIM" ||
                    command == "Unmount WIM" ||
-                   command == "Add Package (CAB)" ||
+                   command == "Add Package (CAB / MSU)" ||
                    command == "Remove Package" ||
                    command == "Export WIM" ||
                    command == "SFC - Scannow";

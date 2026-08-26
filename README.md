@@ -17,7 +17,7 @@ DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File 
 
 - Repair the running system or an offline Windows image with `RestoreHealth`.
 - Mount and unmount WIM images with positive-index and empty-folder validation.
-- Add CAB packages or remove installed packages from supported targets.
+- Add CAB or MSU packages from a typed path or file browser, or remove installed packages from supported targets.
 - List packages installed on the running Windows installation.
 - Export an image index directly to another WIM file.
 - Run `sfc /scannow` or the read-only `sfc /verifyonly` check.
@@ -26,9 +26,9 @@ DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File 
 |:---:|:---:|
 | [![Mount WIM command and required fields](docs/screenshots/mount-wim-command-preview.png)](docs/screenshots/mount-wim-command-preview.png) | [![Unmount WIM modes and command preview](docs/screenshots/unmount-wim-command-preview.png)](docs/screenshots/unmount-wim-command-preview.png) |
 
-| Add a CAB package | List installed packages |
+| Add a CAB or MSU package | List installed packages |
 |:---:|:---:|
-| [![Add Package CAB command preview](docs/screenshots/add-package-command-preview.png)](docs/screenshots/add-package-command-preview.png) | [![Get Installed Packages command preview](docs/screenshots/get-packages-command-preview.png)](docs/screenshots/get-packages-command-preview.png) |
+| [![Add Package command preview](docs/screenshots/add-package-command-preview.png)](docs/screenshots/add-package-command-preview.png) | [![Get Installed Packages command preview](docs/screenshots/get-packages-command-preview.png)](docs/screenshots/get-packages-command-preview.png) |
 
 ### WIM / ESD Image Inspector
 
@@ -106,7 +106,7 @@ Use **Tools → Logs** to open `CBS.log`, `DISM.log`, or `SetupAPI.dev.log` from
 | Run RestoreHealth | Online or offline | Repairs the component store; accepts an optional repair source |
 | Mount WIM | Image file | Mounts a selected WIM index into an existing empty directory |
 | Unmount WIM | Mounted image | Discards, commits, or commits and appends changes |
-| Add Package (CAB) | Online or offline | Adds a selected CAB package |
+| Add Package (CAB / MSU) | Online or offline | Adds a CAB or MSU selected in the file browser or entered as a path |
 | Get Installed Packages | Online | Lists packages installed on the running system |
 | Remove Package | Online or offline | Removes a package by its DISM package identity |
 | Export WIM | Image file | Exports a selected index directly to a destination WIM |
@@ -184,7 +184,8 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 - Active servicing commands cannot be cancelled from the GUI; this avoids interrupting DISM during a critical write operation.
 - Component-tool searches and file copies can be cancelled; active DISM servicing commands remain intentionally non-cancellable.
 - SFCFix is an external interactive utility and may open its own console after it is launched from the integrated workspace.
-- The package installation workflow currently exposes CAB files, while MSU files are handled by the expansion tool.
+- Package installation accepts individual CAB and MSU files; the MSU Expander remains available when package contents must be extracted instead.
+- Direct online MSU installation requires Windows 11, version 21H2 or newer; older Windows targets require offline MSU servicing.
 
 ## Feedback and issues
 

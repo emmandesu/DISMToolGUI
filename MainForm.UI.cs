@@ -37,6 +37,7 @@ namespace DismToolGui
         private Button runButton;
         private Button themeToggleButton;
         private Button openCbsLogButton;
+        private Button addPackageBrowseButton;
 
         private MenuStrip menuStrip;
         private ToolStripMenuItem helpMenuItem;
@@ -132,7 +133,7 @@ namespace DismToolGui
                 "Run RestoreHealth",
                 "Mount WIM",
                 "Unmount WIM",
-                "Add Package (CAB)",
+                "Add Package (CAB / MSU)",
                 "Get Installed Packages",
                 "Remove Package",
                 "Export WIM",
@@ -304,7 +305,7 @@ namespace DismToolGui
                 { "Index", AddLabeledField("Index:") },
                 { "Mount Folder", AddLabeledField("Mount Folder:") },
                 { "Source Path", AddLabeledField("Source Path:") },
-                { "CAB File Path", AddLabeledField("CAB File Path:") },
+                { "Package File Path", AddPackageFileField() },
                 { "Package Name to Remove", AddLabeledField("Package Name to Remove:") },
                 { "Destination Image File", AddLabeledField("Destination Image File:") }
             };
@@ -570,6 +571,78 @@ namespace DismToolGui
             return (label, textBox);
         }
 
+        private (Label, TextBox) AddPackageFileField()
+        {
+            var label = new Label
+            {
+                Text = "Package File Path:",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(0, 5, 0, 5),
+                Visible = false
+            };
+
+            var textBox = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            textBox.TextChanged += (sender, args) => UpdateCommandPreview();
+
+            addPackageBrowseButton = new Button
+            {
+                Text = "Browse...",
+                AutoSize = true,
+                MinimumSize = new Size(90, 28),
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(0)
+            };
+            addPackageBrowseButton.Click += (sender, args) =>
+            {
+                if (!isExecuting)
+                    BrowseForPackageFile();
+            };
+
+            var fieldLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = new Padding(0),
+                Visible = false
+            };
+            fieldLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            fieldLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            fieldLayout.Controls.Add(textBox, 0, 0);
+            fieldLayout.Controls.Add(addPackageBrowseButton, 1, 0);
+
+            inputPanel.Controls.Add(label);
+            inputPanel.Controls.Add(fieldLayout);
+            return (label, textBox);
+        }
+
+        private void BrowseForPackageFile()
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Title = "Select a Windows package",
+                Filter = "Windows packages (*.cab;*.msu)|*.cab;*.msu|CAB packages (*.cab)|*.cab|MSU packages (*.msu)|*.msu|All files (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            string currentPath = NormalizeFilePathInput(
+                GetFieldText("Package File Path"));
+            if (File.Exists(currentPath))
+                dialog.FileName = currentPath;
+
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+                inputFields["Package File Path"].TextBox.Text = dialog.FileName;
+        }
+
         private void SetFieldVisibility(params string[] fieldsToShow)
         {
             foreach (var pair in inputFields)
@@ -577,6 +650,8 @@ namespace DismToolGui
                 bool visible = Array.Exists(fieldsToShow, field => field == pair.Key);
                 pair.Value.Label.Visible = visible;
                 pair.Value.TextBox.Visible = visible;
+                if (pair.Value.TextBox.Parent != inputPanel)
+                    pair.Value.TextBox.Parent.Visible = visible;
             }
         }
 
@@ -632,6 +707,9 @@ namespace DismToolGui
 
             openCbsLogButton.BackColor = dark ? Color.FromArgb(70, 70, 70) : Color.Gainsboro;
             openCbsLogButton.ForeColor = foreground;
+
+            addPackageBrowseButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
+            addPackageBrowseButton.ForeColor = controlForeground;
 
             outputBox.BackColor = outputBg;
             outputBox.ForeColor = outputFg;
@@ -738,6 +816,8 @@ namespace DismToolGui
             SetChoiceControlState(mountReadOnlyCheckBox, inputsEnabled);
             SetChoiceControlState(confirmCommandCheckBox, inputsEnabled);
             toolsMenuItem.Enabled = inputsEnabled;
+            addPackageBrowseButton.Enabled = true;
+            addPackageBrowseButton.TabStop = inputsEnabled;
 
             foreach (var field in inputFields.Values)
             {
@@ -841,7 +921,7 @@ namespace DismToolGui
             openCbsLogButton.Visible =
                 selectedCommand == "Run RestoreHealth" ||
                 selectedCommand == "Remove Package" ||
-                selectedCommand == "Add Package (CAB)";
+                selectedCommand == "Add Package (CAB / MSU)";
         }
     }
 }
