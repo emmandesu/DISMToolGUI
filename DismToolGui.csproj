@@ -27,7 +27,8 @@ Version 1.8.1-stable — UI Reliability
 Fixed the application icon on the main window and taskbar
 Removed the blank image gutter from the Tools dropdown
 Improved menu hover, pressed, border, and separator colors in light and dark modes
-Kept command fields locked but readable with gray text while an operation is running
+Fixed native disabled-state rendering that made radio-button and checkbox text unreadable in dark mode
+Kept command choices locked during execution and restored normal interaction afterward
 
 ---
 
