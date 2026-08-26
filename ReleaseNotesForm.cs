@@ -9,7 +9,7 @@ namespace DismToolGui
             "Version 1.8.2-stable\r\n\r\n" +
             "• Expanded Add Package with CAB/MSU browsing and manual path entry\r\n" +
             "• Added package file validation and support for paths pasted with surrounding quotes\r\n" +
-            "• Fixed SFCFix downloads rejected by Sysnative with HTTP 403\r\n" +
+            "• Added browser-compatible SFCFix downloads with guidance when Cloudflare requires interactive verification\r\n" +
             "• Preserved temporary-file, executable, hash, and signature verification safeguards\r\n\r\n" +
             "Version 1.8.1-stable\r\n\r\n" +
             "• Fixed the application icon on the main window and taskbar\r\n" +

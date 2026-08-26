@@ -16,6 +16,10 @@ namespace DismToolGui
             "https://www.sysnative.com/niemiro/apps/SFCFix.exe";
         private const string ProjectUrl =
             "https://github.com/emmandesu/DISMToolGUI";
+        private const string BrowserUserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0";
 
         private readonly TextBox executableBox;
         private readonly TextBox packageBox;
@@ -200,11 +204,10 @@ namespace DismToolGui
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destination));
-                using var client = new WebClient();
+                using var client = new BrowserCompatibleWebClient();
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                client.Headers[HttpRequestHeader.UserAgent] = GetDownloadUserAgent();
-                client.Headers[HttpRequestHeader.Accept] =
-                    "application/x-msdownload, application/octet-stream;q=0.9, */*;q=0.8";
+                Log(ToolkitLogLevel.Debug,
+                    $"Request identity: {GetDownloadUserAgent()} using browser-compatible HTTP headers.");
                 client.DownloadProgressChanged += (sender, args) =>
                 {
                     int progress = Math.Max(0, Math.Min(100, args.ProgressPercentage));
@@ -234,6 +237,46 @@ namespace DismToolGui
             catch (OperationCanceledException)
             {
                 Log(ToolkitLogLevel.Warning, "SFCFix download cancelled.");
+            }
+            catch (WebException ex) when (IsForbiddenResponse(ex))
+            {
+                const string message =
+                    "Sysnative requested interactive browser verification and rejected the in-app download. " +
+                    "You can open the official download in your browser, then select the downloaded " +
+                    "SFCFix.exe with the Browse button.";
+                Log(ToolkitLogLevel.Error, message);
+
+                if (MessageBox.Show(
+                        this,
+                        message + Environment.NewLine + Environment.NewLine +
+                        "Open the official Sysnative download now?",
+                        "Browser verification required",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning,
+                        MessageBoxDefaultButton.Button1) == DialogResult.Yes)
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = DownloadUrl,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch (Exception launchException) when (
+                        launchException is Win32Exception ||
+                        launchException is InvalidOperationException)
+                    {
+                        Log(ToolkitLogLevel.Error,
+                            $"Unable to open the browser: {launchException.Message}");
+                        MessageBox.Show(
+                            this,
+                            launchException.Message,
+                            "Unable to open browser",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -270,6 +313,42 @@ namespace DismToolGui
                 ? "unknown"
                 : $"{version.Major}.{version.Minor}.{version.Build}";
             return $"DISMToolGUI/{productVersion} (+{ProjectUrl})";
+        }
+
+        private static bool IsForbiddenResponse(WebException exception)
+        {
+            return exception.Response is HttpWebResponse response &&
+                   response.StatusCode == HttpStatusCode.Forbidden;
+        }
+
+        private sealed class BrowserCompatibleWebClient : WebClient
+        {
+            private readonly CookieContainer cookies = new CookieContainer();
+
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                WebRequest webRequest = base.GetWebRequest(address);
+                if (!(webRequest is HttpWebRequest request))
+                    return webRequest;
+
+                request.UserAgent = BrowserUserAgent;
+                request.Accept =
+                    "text/html,application/xhtml+xml,application/xml;q=0.9," +
+                    "image/avif,image/webp,*/*;q=0.8";
+                request.Referer = "https://www.sysnative.com/";
+                request.AutomaticDecompression =
+                    DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                request.CookieContainer = cookies;
+                request.KeepAlive = false;
+                request.ProtocolVersion = HttpVersion.Version11;
+                request.Headers[HttpRequestHeader.AcceptLanguage] = "en-US,en;q=0.9";
+                request.Headers["Upgrade-Insecure-Requests"] = "1";
+                request.Headers["Sec-Fetch-Dest"] = "document";
+                request.Headers["Sec-Fetch-Mode"] = "navigate";
+                request.Headers["Sec-Fetch-Site"] = "same-origin";
+                request.Headers["Sec-Fetch-User"] = "?1";
+                return request;
+            }
         }
 
         private async Task<bool> VerifyAsync(bool showDialog)

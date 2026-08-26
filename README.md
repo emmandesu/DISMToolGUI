@@ -174,6 +174,7 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 | RestoreHealth or package servicing fails | Review the live output and open `CBS.log` from the main window |
 | A component search takes a long time | WinSxS searches and size calculations can be cancelled safely from the tool workspace |
 | A hive will not unload | Close Registry Editor and any process using the mounted key, then try again |
+| Sysnative requires browser verification | Approve opening the official download, save SFCFix.exe, then select it with **Browse**; hash and signature verification still run before launch |
 | SFCFix shows an untrusted signature | Do not run it until you have independently verified the displayed source and SHA-256 |
 | Text is difficult to read | Switch between light and dark mode; existing log entries are recolored automatically |
 | UAC appears every time | This is expected because the application manifest requires administrator privileges |

@@ -26,7 +26,7 @@ Version 1.8.2-stable — Package Servicing &amp; Download Reliability
 
 Expanded Add Package with CAB/MSU browsing and manual path entry
 Added package file validation and support for paths pasted with surrounding quotes
-Fixed SFCFix downloads rejected by Sysnative with HTTP 403
+Added browser-compatible SFCFix downloads with guidance when Cloudflare requires interactive verification
 Preserved temporary-file, executable, hash, and signature verification safeguards
 
 ---
