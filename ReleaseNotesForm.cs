@@ -6,17 +6,19 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.0-stable\r\n\r\n" +
+            "• Added a single-window Tools workspace for image, component, driver, SFCFix, and registry operations\r\n" +
+            "• Added Component Export, WinSxS search, and Driver File Collector\r\n" +
+            "• Added guarded SFCFix download, executable validation, SHA-256 and signature reporting, package generation, and launch confirmation\r\n" +
+            "• Added session-owned offline registry hive management and Windows log shortcuts\r\n" +
+            "• Added read-only WIM mounting, cancellation for file operations, isolated timestamped exports, and shared categorized logs\r\n" +
+            "• Improved responsive light/dark layouts across every integrated tool\r\n\r\n" +
             "Version 1.7.0-stable\r\n\r\n" +
             "• Added WIM / ESD Image Inspector with selectable indexes\r\n" +
             "• Added Mounted Image Manager with remount, commit, discard, and cleanup actions\r\n" +
             "• Added live command preview and copy support\r\n" +
             "• Added confirmation prompts for servicing changes\r\n" +
-            "• Added an integrated single-window component toolkit\r\n" +
-            "• Added Component Export, WinSxS search, and Driver File Collector\r\n" +
-            "• Added guarded SFCFix download, verification, packaging, and launch controls\r\n" +
-            "• Added offline Registry Hive Manager and Windows log shortcuts\r\n" +
-            "• Added read-only WIM mounting and shared categorized tool logs\r\n" +
-            "• Preserved responsive layouts and readable light/dark themes\r\n\r\n" +
+            "• Preserved responsive layouts and readable light/dark themes across the image tools\r\n\r\n" +
             "Version 1.6.1-stable\r\n\r\n" +
             "• Replaced Extract MSU/CAB with MSU Expander Tool\r\n" +
             "• Fixed command result reporting and offline servicing behavior";

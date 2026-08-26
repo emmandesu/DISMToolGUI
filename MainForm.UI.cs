@@ -9,7 +9,7 @@ namespace DismToolGui
 {
     public partial class MainForm : Form
     {
-        private const string Version = "1.7.0-stable";
+        private const string Version = "1.8.0-stable";
         private readonly string dismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
         private readonly string sfcPath = Path.Combine(Environment.SystemDirectory, "sfc.exe");
         private readonly string powershellPath = Path.Combine(

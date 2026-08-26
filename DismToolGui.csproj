@@ -14,7 +14,7 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.7.0</Version>
+	<Version>1.8.0</Version>
 	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
@@ -22,16 +22,23 @@
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
 
+Version 1.8.0-stable — Integrated Component Toolkit
+
+Added a single-window Tools workspace for image, component, driver, SFCFix, and registry operations
+Added Component Export, WinSxS File Search, and Driver File Collector
+Added guarded SFCFix download, executable validation, SHA-256 and signature reporting, package generation, and launch confirmation
+Added session-owned offline registry hive management and Windows log shortcuts
+Added read-only WIM mounting, cancellation for file operations, isolated timestamped exports, and shared categorized logs
+Improved responsive light/dark layouts across every integrated tool
+
+---
+
 Version 1.7.0-stable — Image Management
 
 Added WIM / ESD Image Inspector with selectable indexes
 Added Mounted Image Manager with refresh, remount, commit, discard, and stale cleanup actions
 Added live command preview, copy support, and confirmation prompts
-Added a single-window component toolkit with Component Export, WinSxS search, and Driver File Collector
-Added guarded SFCFix download, identity verification, package generation, and launch controls
-Added offline registry hive management, Windows log shortcuts, and read-only WIM mounting
-Added shared categorized logs with readable light/dark colors across integrated tools
-Preserved responsive layouts and readable light/dark themes across the integrated workspace
+Preserved responsive layouts and readable light/dark themes across the image tools
 
 ---
 
@@ -103,7 +110,7 @@ Renamed export destination field for clarity
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.7.0</FileVersion>
+	<FileVersion>1.8.0</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>
