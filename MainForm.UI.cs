@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace DismToolGui
 {
     public partial class MainForm : Form
     {
-        private const string Version = "1.8.2-stable";
+        private static readonly string DisplayVersion = GetDisplayVersion();
         private readonly string dismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
         private readonly string sfcPath = Path.Combine(Environment.SystemDirectory, "sfc.exe");
         private readonly string powershellPath = Path.Combine(
@@ -364,7 +365,7 @@ namespace DismToolGui
 
             versionLabel = new Label
             {
-                Text = $"Version {Version}",
+                Text = $"Version {DisplayVersion}",
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleRight,
                 Padding = new Padding(0, 5, 10, 5),
@@ -377,6 +378,17 @@ namespace DismToolGui
             commandSelector.SelectedIndex = 0;
             ApplyTheme(isDark);
             UpdateCommandPreview();
+        }
+
+        private static string GetDisplayVersion()
+        {
+            var attribute = typeof(MainForm).Assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            string version = attribute?.InformationalVersion;
+            if (string.IsNullOrWhiteSpace(version))
+                version = typeof(MainForm).Assembly.GetName().Version?.ToString(3) ?? "unknown";
+
+            return $"{version}-stable";
         }
 
         private void InitializeMenu()
