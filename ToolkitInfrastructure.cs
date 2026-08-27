@@ -492,18 +492,29 @@ namespace DismToolGui
         {
             bool trusted = AuthenticodeTrust.VerifyEmbeddedSignature(path);
             string publisher = "Not available";
+            string thumbprint = string.Empty;
+            string certificateSha256 = string.Empty;
             try
             {
                 using var certificate = new X509Certificate2(
                     X509Certificate.CreateFromSignedFile(path));
                 publisher = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                thumbprint = certificate.Thumbprint ?? string.Empty;
+                using var hash = SHA256.Create();
+                certificateSha256 = string.Concat(
+                    hash.ComputeHash(certificate.RawData)
+                        .Select(value => value.ToString("x2")));
             }
             catch (CryptographicException)
             {
                 publisher = "Unsigned";
             }
 
-            return new SignatureStatus(trusted, publisher);
+            return new SignatureStatus(
+                trusted,
+                publisher,
+                thumbprint,
+                certificateSha256);
         }
 
         public static string RequireExistingDirectory(string path, string description)
@@ -583,24 +594,30 @@ namespace DismToolGui
 
     internal sealed class SignatureStatus
     {
-        public SignatureStatus(bool trusted, string publisher)
+        public SignatureStatus(
+            bool trusted,
+            string publisher,
+            string thumbprint,
+            string certificateSha256)
         {
             Trusted = trusted;
             Publisher = publisher ?? string.Empty;
+            Thumbprint = thumbprint ?? string.Empty;
+            CertificateSha256 = certificateSha256 ?? string.Empty;
         }
 
         public bool Trusted { get; }
         public string Publisher { get; }
+        public string Thumbprint { get; }
+        public string CertificateSha256 { get; }
     }
 
     internal static class AuthenticodeTrust
     {
-        private const uint WintrustActionGenericVerifyV2 = 0x00AAC56B;
         private const uint WtdUiNone = 2;
         private const uint WtdRevokeNone = 0;
         private const uint WtdChoiceFile = 1;
-        private const uint WtdStateActionVerify = 1;
-        private const uint WtdStateActionClose = 2;
+        private const uint WtdStateActionIgnore = 0;
         private const uint WtdCacheOnlyUrlRetrieval = 0x1000;
 
         public static bool VerifyEmbeddedSignature(string filePath)
@@ -608,88 +625,75 @@ namespace DismToolGui
             if (!File.Exists(filePath))
                 return false;
 
-            var fileInfo = new WinTrustFileInfo(filePath);
-            var trustData = new WinTrustData(fileInfo);
+            IntPtr filePathPointer = Marshal.StringToCoTaskMemUni(filePath);
+            IntPtr fileInfoPointer = IntPtr.Zero;
             Guid action = new Guid("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
             try
             {
-                return WinVerifyTrust(IntPtr.Zero, action, trustData) == 0;
+                var fileInfo = new WinTrustFileInfo
+                {
+                    StructSize = (uint)Marshal.SizeOf(typeof(WinTrustFileInfo)),
+                    FilePath = filePathPointer
+                };
+                fileInfoPointer = Marshal.AllocCoTaskMem(
+                    Marshal.SizeOf(typeof(WinTrustFileInfo)));
+                Marshal.StructureToPtr(fileInfo, fileInfoPointer, false);
+
+                var trustData = new WinTrustData
+                {
+                    StructSize = (uint)Marshal.SizeOf(typeof(WinTrustData)),
+                    UiChoice = WtdUiNone,
+                    RevocationChecks = WtdRevokeNone,
+                    UnionChoice = WtdChoiceFile,
+                    FileInfo = fileInfoPointer,
+                    StateAction = WtdStateActionIgnore,
+                    ProviderFlags = WtdCacheOnlyUrlRetrieval
+                };
+
+                return WinVerifyTrust(
+                    IntPtr.Zero,
+                    ref action,
+                    ref trustData) == 0;
             }
             finally
             {
-                trustData.StateAction = WtdStateActionClose;
-                WinVerifyTrust(IntPtr.Zero, action, trustData);
-                trustData.Dispose();
-                fileInfo.Dispose();
+                if (fileInfoPointer != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(fileInfoPointer);
+                Marshal.FreeCoTaskMem(filePathPointer);
             }
         }
 
         [DllImport("wintrust.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
         private static extern int WinVerifyTrust(
             IntPtr windowHandle,
-            [MarshalAs(UnmanagedType.LPStruct)] Guid actionId,
-            WinTrustData trustData);
+            ref Guid actionId,
+            ref WinTrustData trustData);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private sealed class WinTrustFileInfo : IDisposable
+        private struct WinTrustFileInfo
         {
-            private readonly IntPtr filePathPointer;
-
-            public WinTrustFileInfo(string filePath)
-            {
-                StructSize = (uint)Marshal.SizeOf(typeof(WinTrustFileInfo));
-                filePathPointer = Marshal.StringToCoTaskMemUni(filePath);
-                FilePath = filePathPointer;
-            }
-
             public uint StructSize;
             public IntPtr FilePath;
-            public IntPtr FileHandle = IntPtr.Zero;
-            public IntPtr KnownSubject = IntPtr.Zero;
-
-            public void Dispose()
-            {
-                if (filePathPointer != IntPtr.Zero)
-                    Marshal.FreeCoTaskMem(filePathPointer);
-            }
+            public IntPtr FileHandle;
+            public IntPtr KnownSubject;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private sealed class WinTrustData : IDisposable
+        private struct WinTrustData
         {
-            private readonly IntPtr fileInfoPointer;
-
-            public WinTrustData(WinTrustFileInfo fileInfo)
-            {
-                StructSize = (uint)Marshal.SizeOf(typeof(WinTrustData));
-                UiChoice = WtdUiNone;
-                RevocationChecks = WtdRevokeNone;
-                UnionChoice = WtdChoiceFile;
-                StateAction = WtdStateActionVerify;
-                ProviderFlags = WtdCacheOnlyUrlRetrieval;
-                fileInfoPointer = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(WinTrustFileInfo)));
-                Marshal.StructureToPtr(fileInfo, fileInfoPointer, false);
-                FileInfo = fileInfoPointer;
-            }
-
             public uint StructSize;
-            public IntPtr PolicyCallbackData = IntPtr.Zero;
-            public IntPtr SipClientData = IntPtr.Zero;
+            public IntPtr PolicyCallbackData;
+            public IntPtr SipClientData;
             public uint UiChoice;
             public uint RevocationChecks;
             public uint UnionChoice;
             public IntPtr FileInfo;
             public uint StateAction;
-            public IntPtr StateData = IntPtr.Zero;
-            public IntPtr UrlReference = IntPtr.Zero;
+            public IntPtr StateData;
+            public IntPtr UrlReference;
             public uint ProviderFlags;
-            public uint UiContext = 0;
-
-            public void Dispose()
-            {
-                if (fileInfoPointer != IntPtr.Zero)
-                    Marshal.FreeCoTaskMem(fileInfoPointer);
-            }
+            public uint UiContext;
+            public IntPtr SignatureSettings;
         }
     }
 }

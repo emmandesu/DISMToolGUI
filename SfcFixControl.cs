@@ -20,6 +20,15 @@ namespace DismToolGui
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0";
+        private const string ExpectedSignerPublisher =
+            "Sysnative Forums Software Ltd";
+        private const string ExpectedSignerThumbprint =
+            "82BA2FCF85BB1DEB7B2459DA28591E2B7283EF9D";
+        // SHA-256 of the DER-encoded leaf certificate supplied in the official
+        // Sysnative PKCS#7 certificate bundle. This is the security identity pin;
+        // the SHA-1 thumbprint above is retained only for diagnostics and display.
+        private const string ExpectedSignerCertificateSha256 =
+            "7F3176DEA2E713B9EBB94ADB96081EFDF62B9069E0B6C9A7A209A4193DDF0E34";
 
         private readonly TextBox executableBox;
         private readonly TextBox packageBox;
@@ -199,6 +208,7 @@ namespace DismToolGui
             progressBar.Value = 0;
             progressBar.Visible = true;
             string temporaryPath = destination + ".download";
+            bool downloadInstalled = false;
             Log(ToolkitLogLevel.Process, $"Downloading SFCFix from {DownloadUrl}");
 
             try
@@ -222,11 +232,21 @@ namespace DismToolGui
                         "The downloaded response is not a valid Windows executable. " +
                         "The existing SFCFix.exe, if any, was not replaced.");
 
+                SignatureStatus downloadedSignature =
+                    ToolkitFileOperations.GetSignatureStatus(temporaryPath);
+                if (!IsExpectedSfcFixSigner(downloadedSignature))
+                    throw new InvalidDataException(
+                        "The downloaded executable is not signed by the pinned " +
+                        $"{ExpectedSignerPublisher} certificate. " +
+                        "The existing SFCFix.exe, if any, was not replaced.");
+
                 if (File.Exists(destination))
                     File.Delete(destination);
                 File.Move(temporaryPath, destination);
+                downloadInstalled = true;
                 executableBox.Text = destination;
-                Log(ToolkitLogLevel.Success, $"Downloaded SFCFix to {destination}");
+                Log(ToolkitLogLevel.Success,
+                    $"Downloaded and verified SFCFix from {ExpectedSignerPublisher} to {destination}");
             }
             catch (WebException ex) when (
                 token.IsCancellationRequested ||
@@ -302,7 +322,7 @@ namespace DismToolGui
                 EndOperation();
             }
 
-            if (File.Exists(destination))
+            if (downloadInstalled && File.Exists(destination))
                 await VerifyAsync(false);
         }
 
@@ -386,25 +406,29 @@ namespace DismToolGui
                 verifiedPath = Path.GetFullPath(executable);
                 verifiedHash = result.Item1;
                 verifiedSignature = result.Item2;
+                bool expectedSigner = IsExpectedSfcFixSigner(verifiedSignature);
                 verificationBox.Text =
                     $"File: {verifiedPath}{Environment.NewLine}" +
                     $"SHA-256: {verifiedHash}{Environment.NewLine}" +
                     $"Trusted Authenticode signature: {(verifiedSignature.Trusted ? "Yes" : "No")}{Environment.NewLine}" +
+                    $"Expected Sysnative signer: {(expectedSigner ? "Yes" : "No")}{Environment.NewLine}" +
                     $"Publisher: {verifiedSignature.Publisher}{Environment.NewLine}" +
+                    $"Signer thumbprint: {FormatSignatureValue(verifiedSignature.Thumbprint)}{Environment.NewLine}" +
+                    $"Signer certificate SHA-256: {FormatSignatureValue(verifiedSignature.CertificateSha256)}{Environment.NewLine}" +
                     $"Source URL: {DownloadUrl}";
 
-                Log(verifiedSignature.Trusted ? ToolkitLogLevel.Success : ToolkitLogLevel.Warning,
-                    verifiedSignature.Trusted
-                        ? $"SFCFix signature is trusted. Publisher: {verifiedSignature.Publisher}"
-                        : "SFCFix does not have a trusted Authenticode signature. Review the source and hash before running it.");
+                Log(expectedSigner ? ToolkitLogLevel.Success : ToolkitLogLevel.Error,
+                    expectedSigner
+                        ? $"SFCFix signature is trusted and matches the pinned {ExpectedSignerPublisher} certificate."
+                        : GetSignatureFailureMessage(verifiedSignature));
 
-                if (showDialog)
+                if (showDialog || !expectedSigner)
                     MessageBox.Show(this, verificationBox.Text, "SFCFix verification",
                         MessageBoxButtons.OK,
-                        verifiedSignature.Trusted
+                        expectedSigner
                             ? MessageBoxIcon.Information
-                            : MessageBoxIcon.Warning);
-                return true;
+                            : MessageBoxIcon.Error);
+                return expectedSigner;
             }
             catch (OperationCanceledException)
             {
@@ -443,52 +467,93 @@ namespace DismToolGui
                 return;
             }
 
-            // Recalculate identity immediately before launch so a file changed after an
-            // earlier verification cannot reuse stale hash or signature information.
-            if (!await VerifyAsync(false))
-                return;
-
-            string signatureWarning = verifiedSignature.Trusted
-                ? $"Trusted publisher: {verifiedSignature.Publisher}"
-                : "WARNING: Windows did not report a trusted Authenticode signature.";
-            string prompt =
-                $"SFCFix may modify protected Windows files and may reboot the computer.{Environment.NewLine}{Environment.NewLine}" +
-                $"Executable: {executable}{Environment.NewLine}" +
-                $"Package: {package}{Environment.NewLine}" +
-                $"SHA-256: {verifiedHash}{Environment.NewLine}" +
-                $"{signatureWarning}{Environment.NewLine}{Environment.NewLine}" +
-                "Run SFCFix as administrator?";
-
-            if (MessageBox.Show(this, prompt, "Confirm SFCFix execution",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button2) != DialogResult.Yes)
-            {
-                Log(ToolkitLogLevel.Warning, "SFCFix execution cancelled by the user.");
-                return;
-            }
-
             try
             {
-                Log(ToolkitLogLevel.Command,
-                    $"{executable} {ToolkitProcessRunner.QuoteArgument(package)}");
-                Process.Start(new ProcessStartInfo
+                executable = Path.GetFullPath(executable);
+                package = Path.GetFullPath(package);
+
+                // Deny write/delete sharing while verifying, confirming, and launching
+                // so the checked executable cannot be replaced between those steps.
+                using (var launchLock = new FileStream(
+                           executable,
+                           FileMode.Open,
+                           FileAccess.Read,
+                           FileShare.Read))
                 {
-                    FileName = executable,
-                    Arguments = ToolkitProcessRunner.QuoteArgument(package),
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    WorkingDirectory = Path.GetDirectoryName(executable)
-                });
+                    // Recalculate identity immediately before launch so an earlier
+                    // verification can never authorize a changed executable.
+                    if (!await VerifyAsync(false))
+                        return;
+
+                    string prompt =
+                        $"SFCFix may modify protected Windows files and may reboot the computer.{Environment.NewLine}{Environment.NewLine}" +
+                        $"Executable: {executable}{Environment.NewLine}" +
+                        $"Package: {package}{Environment.NewLine}" +
+                        $"SHA-256: {verifiedHash}{Environment.NewLine}" +
+                        $"Verified publisher: {verifiedSignature.Publisher}{Environment.NewLine}" +
+                        $"Pinned signer certificate: matched{Environment.NewLine}{Environment.NewLine}" +
+                        "Run SFCFix as administrator?";
+
+                    if (MessageBox.Show(this, prompt, "Confirm SFCFix execution",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Warning,
+                            MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                    {
+                        Log(ToolkitLogLevel.Warning, "SFCFix execution cancelled by the user.");
+                        return;
+                    }
+
+                    Log(ToolkitLogLevel.Command,
+                        $"{executable} {ToolkitProcessRunner.QuoteArgument(package)}");
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = executable,
+                        Arguments = ToolkitProcessRunner.QuoteArgument(package),
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        WorkingDirectory = Path.GetDirectoryName(executable)
+                    });
+                }
                 Log(ToolkitLogLevel.Success,
                     "SFCFix launched. Follow its external console prompts and save your work in case Windows restarts.");
             }
-            catch (Win32Exception ex)
+            catch (Exception ex) when (
+                ex is Win32Exception ||
+                ex is IOException ||
+                ex is UnauthorizedAccessException)
             {
                 Log(ToolkitLogLevel.Error, $"Unable to launch SFCFix: {ex.Message}");
                 MessageBox.Show(this, ex.Message, "SFCFix launch failed",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static bool IsExpectedSfcFixSigner(SignatureStatus signature)
+        {
+            return signature != null &&
+                   signature.Trusted &&
+                   string.Equals(
+                       signature.CertificateSha256,
+                       ExpectedSignerCertificateSha256,
+                       StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(
+                       signature.Thumbprint,
+                       ExpectedSignerThumbprint,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetSignatureFailureMessage(SignatureStatus signature)
+        {
+            if (signature == null || !signature.Trusted)
+                return "SFCFix execution is blocked because Windows did not report a trusted Authenticode signature.";
+
+            return "SFCFix execution is blocked because its signer does not match the pinned " +
+                   $"{ExpectedSignerPublisher} certificate.";
+        }
+
+        private static string FormatSignatureValue(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "Not available" : value.ToUpperInvariant();
         }
 
         private void ResetVerification()
