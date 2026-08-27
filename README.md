@@ -1,6 +1,6 @@
 # DISM Tool GUI
 
-[![Version](https://img.shields.io/badge/version-1.8.2--stable-0078d4)](https://github.com/emmandesu/DISMToolGUI/releases)
+[![Version](https://img.shields.io/badge/version-1.8.3--stable-0078d4)](https://github.com/emmandesu/DISMToolGUI/releases)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)
 ![Framework](https://img.shields.io/badge/framework-.NET%20Framework%204.8-512bd4)
 

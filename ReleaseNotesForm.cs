@@ -6,6 +6,11 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.3-stable\r\n\r\n" +
+            "• Required Windows Authenticode trust and an exact match to the official Sysnative signer certificate\r\n" +
+            "• Blocked unsigned or unexpected SFCFix executables with no run-anyway path\r\n" +
+            "• Verified downloads before replacing an existing SFCFix copy and protected the verified file through launch\r\n" +
+            "• Corrected WinTrust native interop for reliable signature validation\r\n\r\n" +
             "Version 1.8.2-stable\r\n\r\n" +
             "• Expanded Add Package with CAB/MSU browsing and manual path entry\r\n" +
             "• Added package file validation and support for paths pasted with surrounding quotes\r\n" +
