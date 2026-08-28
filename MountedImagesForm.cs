@@ -10,7 +10,7 @@ namespace DismToolGui
 {
     internal sealed class MountedImagesForm : Form
     {
-        private readonly AppTheme currentTheme;
+        private AppTheme currentTheme;
         private readonly DataGridView mountedGrid;
         private readonly RichTextBox outputBox;
         private readonly Button refreshButton;
@@ -148,7 +148,7 @@ namespace DismToolGui
             FormClosing += MountedImagesForm_FormClosing;
             if (autoRefresh)
                 Shown += async (sender, args) => await RefreshMountedImagesAsync();
-            ApplyTheme(root, toolbar);
+            ApplyTheme(currentTheme);
             UpdateActionButtons();
         }
 
@@ -426,15 +426,12 @@ namespace DismToolGui
                 "Operation in progress", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        private void ApplyTheme(params Control[] containers)
+        internal void ApplyTheme(AppTheme theme)
         {
+            currentTheme = theme ?? ThemeCatalog.Default;
             BackColor = currentTheme.Background;
             ForeColor = currentTheme.Foreground;
-            foreach (Control control in containers)
-            {
-                control.BackColor = currentTheme.PanelBackground;
-                control.ForeColor = currentTheme.Foreground;
-            }
+            ThemeStyler.ApplyControlTree(this, currentTheme);
 
             foreach (Button button in new[]
             {

@@ -681,24 +681,34 @@ namespace DismToolGui
         private void SelectTheme(AppTheme theme, bool persist = true)
         {
             currentTheme = theme ?? ThemeCatalog.Default;
+            string persistenceError = null;
             if (persist)
             {
                 try
                 {
                     SettingsManager.Set("ThemeId", currentTheme.Id);
                 }
-                catch (IOException)
+                catch (Exception ex) when (
+                    ex is IOException ||
+                    ex is UnauthorizedAccessException ||
+                    ex is System.Security.SecurityException)
                 {
-                    // Apply the selection for this session even if settings are unavailable.
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Apply the selection for this session even if settings are unavailable.
+                    persistenceError = ex.Message;
                 }
             }
 
             UpdateThemeChecks();
             ApplyTheme(currentTheme);
+            if (persistenceError != null)
+            {
+                MessageBox.Show(
+                    this,
+                    "The theme was applied for this session, but it could not be saved for the next launch." +
+                    Environment.NewLine + Environment.NewLine + persistenceError,
+                    "Theme not saved",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
         }
 
         private void UpdateThemeChecks()
@@ -742,7 +752,9 @@ namespace DismToolGui
             commandPreviewBox.BackColor = currentTheme.InputBackground;
             commandPreviewBox.ForeColor = inputForeground;
             ThemeStyler.ApplyButton(copyCommandButton, currentTheme);
-            copyCommandButton.ForeColor = controlForeground;
+            copyCommandButton.ForeColor = isExecuting
+                ? currentTheme.DisabledForeground
+                : currentTheme.ButtonForeground;
             confirmCommandCheckBox.BackColor = currentTheme.PanelBackground;
             confirmCommandCheckBox.ForeColor = controlForeground;
             mountReadOnlyCheckBox.BackColor = currentTheme.PanelBackground;
@@ -754,7 +766,9 @@ namespace DismToolGui
                 : currentTheme.AccentForeground;
             ThemeStyler.ApplyButton(openCbsLogButton, currentTheme);
             ThemeStyler.ApplyButton(addPackageBrowseButton, currentTheme);
-            addPackageBrowseButton.ForeColor = controlForeground;
+            addPackageBrowseButton.ForeColor = isExecuting
+                ? currentTheme.DisabledForeground
+                : currentTheme.ButtonForeground;
 
             outputBox.BackColor = currentTheme.OutputBackground;
             outputBox.ForeColor = currentTheme.OutputForeground;
@@ -920,9 +934,11 @@ namespace DismToolGui
 
             protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
             {
-                e.TextColor = e.Item.Enabled
-                    ? theme.Foreground
-                    : theme.DisabledForeground;
+                e.TextColor = !e.Item.Enabled
+                    ? theme.DisabledForeground
+                    : e.Item.Selected
+                        ? theme.ButtonForeground
+                        : theme.Foreground;
                 base.OnRenderItemText(e);
             }
         }

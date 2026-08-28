@@ -381,7 +381,7 @@ namespace DismToolGui
             previewButton.Enabled = !busy;
             collectButton.Enabled = !busy && matches.Count > 0;
             cancelButton.Enabled = busy;
-            createPackageCheckBox.Enabled = !busy;
+            SetChoiceControlState(createPackageCheckBox, !busy);
             matchesGrid.Enabled = !busy;
         }
     }

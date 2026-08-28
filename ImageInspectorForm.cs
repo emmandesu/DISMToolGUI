@@ -9,7 +9,7 @@ namespace DismToolGui
 {
     internal sealed class ImageInspectorForm : Form
     {
-        private readonly AppTheme currentTheme;
+        private AppTheme currentTheme;
         private readonly TextBox imagePathBox;
         private readonly Button browseButton;
         private readonly Button inspectButton;
@@ -183,7 +183,7 @@ namespace DismToolGui
             if (!embeddedMode)
                 CancelButton = closeButton;
             FormClosing += ImageInspectorForm_FormClosing;
-            ApplyTheme(root, pathLayout, footer, pathLabel, closeButton);
+            ApplyTheme(currentTheme);
         }
 
         public string SelectedImagePath { get; private set; }
@@ -405,17 +405,12 @@ namespace DismToolGui
                 "Inspection in progress", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        private void ApplyTheme(params Control[] containers)
+        internal void ApplyTheme(AppTheme theme)
         {
+            currentTheme = theme ?? ThemeCatalog.Default;
             BackColor = currentTheme.Background;
             ForeColor = currentTheme.Foreground;
-            foreach (Control control in containers)
-            {
-                control.BackColor = currentTheme.PanelBackground;
-                control.ForeColor = currentTheme.Foreground;
-                if (control is Button button)
-                    ThemeStyler.ApplyButton(button, currentTheme);
-            }
+            ThemeStyler.ApplyControlTree(this, currentTheme);
 
             imagePathBox.BackColor = currentTheme.InputBackground;
             imagePathBox.ForeColor = currentTheme.InputForeground;

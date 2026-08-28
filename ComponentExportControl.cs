@@ -551,8 +551,8 @@ namespace DismToolGui
             detectVersionButton.Enabled = !busy;
             searchButton.Enabled = !busy;
             cancelButton.Enabled = busy;
-            registryCheckBox.Enabled = !busy;
-            packageCheckBox.Enabled = !busy;
+            SetChoiceControlState(registryCheckBox, !busy);
+            SetChoiceControlState(packageCheckBox, !busy);
             matchesGrid.Enabled = !busy;
             UpdateExportButton();
         }

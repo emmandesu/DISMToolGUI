@@ -46,6 +46,8 @@ namespace DismToolGui
             BackColor = CurrentTheme.PanelBackground;
             ForeColor = CurrentTheme.Foreground;
             ThemeStyler.ApplyControlTree(this, CurrentTheme);
+            if (IsBusy)
+                OnBusyChanged(true);
         }
 
         public void ApplyTheme(bool dark)
@@ -78,6 +80,21 @@ namespace DismToolGui
 
         protected virtual void OnBusyChanged(bool busy)
         {
+        }
+
+        protected void SetChoiceControlState(CheckBox choiceControl, bool interactive)
+        {
+            if (choiceControl == null)
+                return;
+
+            // Native disabled check boxes ignore custom foreground colors on some
+            // Windows themes. Keep the control enabled, but lock its interaction.
+            choiceControl.Enabled = true;
+            choiceControl.AutoCheck = interactive;
+            choiceControl.TabStop = interactive;
+            choiceControl.ForeColor = interactive
+                ? CurrentTheme.Foreground
+                : CurrentTheme.DisabledForeground;
         }
 
         protected void Log(ToolkitLogLevel level, string message)

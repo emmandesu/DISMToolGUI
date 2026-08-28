@@ -213,7 +213,7 @@ namespace DismToolGui
             logBox.ForeColor = currentTheme.OutputForeground;
             foreach (ToolkitPageBase page in pages.Values)
                 page.ApplyTheme(currentTheme);
-            RecreateEmbeddedPageForTheme();
+            ApplyEmbeddedPageTheme();
             RecolorLog();
         }
 
@@ -378,32 +378,12 @@ namespace DismToolGui
             return true;
         }
 
-        private void RecreateEmbeddedPageForTheme()
+        private void ApplyEmbeddedPageTheme()
         {
             if (currentPage is ImageInspectorForm inspector)
-            {
-                if (inspector.IsBusy)
-                    return;
-                string currentImagePath = inspector.CurrentImagePath;
-                inspector.Hide();
-                inspector.Dispose();
-                currentPage = CreateImageInspector(currentImagePath);
-            }
+                inspector.ApplyTheme(currentTheme);
             else if (currentPage is MountedImagesForm manager)
-            {
-                if (manager.IsBusy)
-                    return;
-                manager.Hide();
-                manager.Dispose();
-                currentPage = CreateMountedImagesManager();
-            }
-
-            if (currentPage != null)
-            {
-                currentPage.Dock = DockStyle.Fill;
-                currentPage.Visible = true;
-                currentPage.BringToFront();
-            }
+                manager.ApplyTheme(currentTheme);
         }
 
         private void ClearLog()

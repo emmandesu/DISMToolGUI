@@ -223,24 +223,43 @@ namespace DismToolGui
                     throw new InvalidOperationException(
                         $"reg.exe could not load the hive (exit code {result.ExitCode}).");
 
-                mountedByApplication.Add(new MountedHiveEntry
-                {
-                    Root = root,
-                    MountName = mountName,
-                    HiveFile = Path.GetFullPath(hiveFile),
-                    Status = "Loaded"
-                });
+                EnsureLoadedHiveTracked(root, mountName, hiveFile);
                 RefreshMountedHives();
                 Log(ToolkitLogLevel.Success, $"Loaded {registryPath}.");
             }
             catch (OperationCanceledException)
             {
-                Log(ToolkitLogLevel.Warning, "Hive load cancelled.");
+                if (EnsureLoadedHiveTracked(root, mountName, hiveFile))
+                {
+                    RefreshMountedHives();
+                    Log(
+                        ToolkitLogLevel.Warning,
+                        $"{registryPath} finished loading before cancellation and remains tracked. " +
+                        "Unload it before closing the application.");
+                }
+                else
+                {
+                    Log(ToolkitLogLevel.Warning, "Hive load cancelled.");
+                }
             }
             catch (Exception ex)
             {
                 Log(ToolkitLogLevel.Error, ex.Message);
-                MessageBox.Show(this, ex.Message, "Hive load failed",
+                bool hiveRemainsLoaded = EnsureLoadedHiveTracked(root, mountName, hiveFile);
+                if (hiveRemainsLoaded)
+                {
+                    RefreshMountedHives();
+                    Log(
+                        ToolkitLogLevel.Warning,
+                        $"{registryPath} remains loaded and is tracked for safe unloading.");
+                }
+
+                string message = hiveRemainsLoaded
+                    ? ex.Message + Environment.NewLine + Environment.NewLine +
+                      $"{registryPath} is still loaded and has been added to the mounted-hive list. " +
+                      "Unload it before closing the application."
+                    : ex.Message;
+                MessageBox.Show(this, message, "Hive load failed",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -323,6 +342,27 @@ namespace DismToolGui
                 ? "No hives mounted by this application session."
                 : $"{loaded} hive(s) mounted by this application session.";
             UpdateSelectionButtons();
+        }
+
+        private bool EnsureLoadedHiveTracked(string root, string mountName, string hiveFile)
+        {
+            if (!IsHiveLoaded(root, mountName))
+                return false;
+
+            MountedHiveEntry tracked = mountedByApplication.FirstOrDefault(entry =>
+                string.Equals(entry.Root, root, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry.MountName, mountName, StringComparison.OrdinalIgnoreCase));
+            if (tracked == null)
+            {
+                tracked = new MountedHiveEntry();
+                mountedByApplication.Add(tracked);
+            }
+
+            tracked.Root = root;
+            tracked.MountName = mountName;
+            tracked.HiveFile = Path.GetFullPath(hiveFile);
+            tracked.Status = "Loaded";
+            return true;
         }
 
         private void OpenSelectedInRegistryEditor()
