@@ -974,7 +974,7 @@ namespace DismToolGui
 
             outputBox.SelectionStart = entryStart;
             outputBox.SelectionLength = 0;
-            outputBox.SelectionColor = ResolveLogColor(color, isDark);
+            outputBox.SelectionColor = ResolveLogColor(color, currentTheme);
             outputBox.AppendText(line);
             outputBox.SelectionColor = outputBox.ForeColor;
             outputBox.ScrollToCaret();

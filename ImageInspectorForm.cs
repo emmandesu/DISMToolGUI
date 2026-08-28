@@ -9,7 +9,7 @@ namespace DismToolGui
 {
     internal sealed class ImageInspectorForm : Form
     {
-        private readonly bool darkTheme;
+        private readonly AppTheme currentTheme;
         private readonly TextBox imagePathBox;
         private readonly Button browseButton;
         private readonly Button inspectButton;
@@ -22,17 +22,21 @@ namespace DismToolGui
         private bool isBusy;
 
         public ImageInspectorForm(bool darkTheme, string initialImagePath)
-            : this(darkTheme, initialImagePath, false, null)
+            : this(
+                darkTheme ? ThemeCatalog.Default : ThemeCatalog.DefaultLight,
+                initialImagePath,
+                false,
+                null)
         {
         }
 
         internal ImageInspectorForm(
-            bool darkTheme,
+            AppTheme theme,
             string initialImagePath,
             bool embeddedMode,
             Action<string, bool> logSink)
         {
-            this.darkTheme = darkTheme;
+            currentTheme = theme ?? ThemeCatalog.Default;
             this.embeddedMode = embeddedMode;
             this.logSink = logSink;
 
@@ -191,7 +195,7 @@ namespace DismToolGui
 
         private static Button CreateButton(string text, int width)
         {
-            return new Button
+            return new ThemedButton
             {
                 Text = text,
                 AutoSize = true,
@@ -385,8 +389,8 @@ namespace DismToolGui
             outputBox.SelectionStart = outputBox.TextLength;
             outputBox.SelectionLength = 0;
             outputBox.SelectionColor = isError
-                ? (darkTheme ? Color.IndianRed : Color.Firebrick)
-                : (darkTheme ? Color.Gainsboro : Color.Black);
+                ? currentTheme.LogError
+                : currentTheme.LogInfo;
             outputBox.AppendText(message + Environment.NewLine);
             outputBox.ScrollToCaret();
         }
@@ -403,41 +407,25 @@ namespace DismToolGui
 
         private void ApplyTheme(params Control[] containers)
         {
-            Color background = darkTheme ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color foreground = darkTheme ? Color.White : Color.Black;
-            Color inputBackground = darkTheme ? Color.FromArgb(45, 45, 48) : Color.White;
-            Color buttonBackground = darkTheme ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-
-            BackColor = background;
-            ForeColor = foreground;
+            BackColor = currentTheme.Background;
+            ForeColor = currentTheme.Foreground;
             foreach (Control control in containers)
             {
-                control.BackColor = background;
-                control.ForeColor = foreground;
+                control.BackColor = currentTheme.PanelBackground;
+                control.ForeColor = currentTheme.Foreground;
                 if (control is Button button)
-                    button.BackColor = buttonBackground;
+                    ThemeStyler.ApplyButton(button, currentTheme);
             }
 
-            imagePathBox.BackColor = inputBackground;
-            imagePathBox.ForeColor = foreground;
-            outputBox.BackColor = darkTheme ? Color.FromArgb(20, 20, 20) : Color.White;
-            outputBox.ForeColor = foreground;
+            imagePathBox.BackColor = currentTheme.InputBackground;
+            imagePathBox.ForeColor = currentTheme.InputForeground;
+            outputBox.BackColor = currentTheme.OutputBackground;
+            outputBox.ForeColor = currentTheme.OutputForeground;
 
             foreach (Button button in new[] { browseButton, inspectButton, useSelectionButton })
-            {
-                button.BackColor = buttonBackground;
-                button.ForeColor = foreground;
-            }
+                ThemeStyler.ApplyButton(button, currentTheme);
 
-            imageGrid.BackgroundColor = inputBackground;
-            imageGrid.GridColor = darkTheme ? Color.DimGray : Color.LightGray;
-            imageGrid.DefaultCellStyle.BackColor = inputBackground;
-            imageGrid.DefaultCellStyle.ForeColor = foreground;
-            imageGrid.DefaultCellStyle.SelectionBackColor = darkTheme ? Color.Teal : Color.SteelBlue;
-            imageGrid.DefaultCellStyle.SelectionForeColor = Color.White;
-            imageGrid.ColumnHeadersDefaultCellStyle.BackColor = buttonBackground;
-            imageGrid.ColumnHeadersDefaultCellStyle.ForeColor = foreground;
-            imageGrid.EnableHeadersVisualStyles = false;
+            ThemeStyler.ApplyGrid(imageGrid, currentTheme);
         }
 
         private sealed class WimImageInfo

@@ -26,7 +26,6 @@ namespace DismToolGui
         private readonly Panel pageHost;
         private readonly Label titleLabel;
         private readonly Button backButton;
-        private readonly Button themeButton;
         private readonly Button clearLogButton;
         private readonly Button exportLogButton;
         private readonly RichTextBox logBox;
@@ -37,14 +36,14 @@ namespace DismToolGui
         private SfcFixControl sfcFixPage;
         private Control currentPage;
         private ToolWorkspacePage currentPageKind;
-        private bool darkTheme;
+        private AppTheme currentTheme;
 
         public ToolWorkspaceControl(
-            bool darkTheme,
+            AppTheme theme,
             Func<string> initialImagePathProvider,
             Action<string, int> applyImageSelection)
         {
-            this.darkTheme = darkTheme;
+            currentTheme = theme ?? ThemeCatalog.Default;
             this.initialImagePathProvider = initialImagePathProvider ?? (() => string.Empty);
             this.applyImageSelection = applyImageSelection ?? ((path, index) => { });
 
@@ -67,13 +66,12 @@ namespace DismToolGui
             {
                 Dock = DockStyle.Fill,
                 AutoSize = true,
-                ColumnCount = 5,
+                ColumnCount = 4,
                 RowCount = 1,
                 Padding = new Padding(10, 8, 10, 8),
                 Margin = new Padding(0)
             };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -88,7 +86,6 @@ namespace DismToolGui
                 Margin = new Padding(0, 6, 8, 0)
             };
             backButton = CreateHeaderButton("Back to commands", 135);
-            themeButton = CreateHeaderButton(darkTheme ? "Light mode" : "Dark mode", 105);
             clearLogButton = CreateHeaderButton("Clear log", 90);
             exportLogButton = CreateHeaderButton("Export log", 95);
             clearLogButton.Enabled = false;
@@ -98,15 +95,13 @@ namespace DismToolGui
                 if (CanLeaveCurrentPage())
                     BackRequested?.Invoke(this, EventArgs.Empty);
             };
-            themeButton.Click += (sender, args) => ThemeToggleRequested?.Invoke(this, EventArgs.Empty);
             clearLogButton.Click += (sender, args) => ClearLog();
             exportLogButton.Click += (sender, args) => ExportLog();
 
             header.Controls.Add(titleLabel, 0, 0);
             header.Controls.Add(backButton, 1, 0);
-            header.Controls.Add(themeButton, 2, 0);
-            header.Controls.Add(clearLogButton, 3, 0);
-            header.Controls.Add(exportLogButton, 4, 0);
+            header.Controls.Add(clearLogButton, 2, 0);
+            header.Controls.Add(exportLogButton, 3, 0);
 
             pageHost = new Panel
             {
@@ -138,11 +133,21 @@ namespace DismToolGui
             root.Controls.Add(pageHost, 0, 1);
             root.Controls.Add(logGroup, 0, 2);
             Controls.Add(root);
-            ApplyTheme(darkTheme);
+            ApplyTheme(currentTheme);
+        }
+
+        public ToolWorkspaceControl(
+            bool darkTheme,
+            Func<string> initialImagePathProvider,
+            Action<string, int> applyImageSelection)
+            : this(
+                darkTheme ? ThemeCatalog.Default : ThemeCatalog.DefaultLight,
+                initialImagePathProvider,
+                applyImageSelection)
+        {
         }
 
         public event EventHandler BackRequested;
-        public event EventHandler ThemeToggleRequested;
 
         public void ShowPage(ToolWorkspacePage page)
         {
@@ -184,38 +189,30 @@ namespace DismToolGui
             return registryHivePage == null || registryHivePage.CanApplicationClose();
         }
 
-        public void ApplyTheme(bool dark)
+        public void ApplyTheme(AppTheme theme)
         {
-            darkTheme = dark;
-            Color background = dark ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color foreground = dark ? Color.White : Color.Black;
-            Color buttonBackground = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-            Color outputBackground = dark ? Color.FromArgb(20, 20, 20) : Color.White;
+            currentTheme = theme ?? ThemeCatalog.Default;
 
-            BackColor = background;
-            ForeColor = foreground;
-            root.BackColor = background;
-            pageHost.BackColor = background;
-            themeButton.Text = dark ? "Light mode" : "Dark mode";
+            BackColor = currentTheme.Background;
+            ForeColor = currentTheme.Foreground;
+            root.BackColor = currentTheme.Background;
+            pageHost.BackColor = currentTheme.PanelBackground;
 
             foreach (Button button in new[]
             {
                 backButton,
-                themeButton,
                 clearLogButton,
                 exportLogButton
             })
             {
-                button.BackColor = buttonBackground;
-                button.ForeColor = foreground;
-                button.FlatAppearance.BorderColor = dark ? Color.DimGray : Color.DarkGray;
+                ThemeStyler.ApplyButton(button, currentTheme);
             }
 
-            ApplySimpleTheme(root, background, foreground);
-            logBox.BackColor = outputBackground;
-            logBox.ForeColor = foreground;
+            ApplySimpleTheme(root, currentTheme.PanelBackground, currentTheme.Foreground);
+            logBox.BackColor = currentTheme.OutputBackground;
+            logBox.ForeColor = currentTheme.OutputForeground;
             foreach (ToolkitPageBase page in pages.Values)
-                page.ApplyTheme(dark);
+                page.ApplyTheme(currentTheme);
             RecreateEmbeddedPageForTheme();
             RecolorLog();
         }
@@ -245,7 +242,7 @@ namespace DismToolGui
             int start = logBox.TextLength;
             logBox.SelectionStart = start;
             logBox.SelectionLength = 0;
-            logBox.SelectionColor = GetLogColor(level, darkTheme);
+            logBox.SelectionColor = currentTheme.GetLogColor(level);
             logBox.AppendText(line);
             logBox.SelectionColor = logBox.ForeColor;
             logBox.ScrollToCaret();
@@ -257,7 +254,7 @@ namespace DismToolGui
         private Control CreateImageInspector(string initialPath = null)
         {
             var inspector = new ImageInspectorForm(
-                darkTheme,
+                currentTheme,
                 initialPath ?? initialImagePathProvider(),
                 true,
                 AppendEmbeddedLog);
@@ -279,7 +276,7 @@ namespace DismToolGui
         private Control CreateMountedImagesManager()
         {
             var manager = new MountedImagesForm(
-                darkTheme,
+                currentTheme,
                 true,
                 AppendEmbeddedLog,
                 true);
@@ -324,7 +321,7 @@ namespace DismToolGui
             }
 
             pages.Add(page, created);
-            created.ApplyTheme(darkTheme);
+            created.ApplyTheme(currentTheme);
             return created;
         }
 
@@ -456,14 +453,14 @@ namespace DismToolGui
                 if (entry.Start + entry.Length > logBox.TextLength)
                     continue;
                 logBox.Select(entry.Start, entry.Length);
-                logBox.SelectionColor = GetLogColor(entry.Level, darkTheme);
+                logBox.SelectionColor = currentTheme.GetLogColor(entry.Level);
             }
             logBox.Select(selectionStart, selectionLength);
         }
 
         private static Button CreateHeaderButton(string text, int width)
         {
-            return new Button
+            return new ThemedButton
             {
                 Text = text,
                 AutoSize = true,
@@ -500,27 +497,6 @@ namespace DismToolGui
         private static string GetLevelName(ToolkitLogLevel level)
         {
             return level == ToolkitLogLevel.Warning ? "WARN" : level.ToString().ToUpperInvariant();
-        }
-
-        private static Color GetLogColor(ToolkitLogLevel level, bool dark)
-        {
-            switch (level)
-            {
-                case ToolkitLogLevel.Process:
-                    return dark ? Color.DeepSkyBlue : Color.RoyalBlue;
-                case ToolkitLogLevel.Success:
-                    return dark ? Color.LightGreen : Color.DarkGreen;
-                case ToolkitLogLevel.Warning:
-                    return dark ? Color.Gold : Color.DarkOrange;
-                case ToolkitLogLevel.Error:
-                    return dark ? Color.IndianRed : Color.Firebrick;
-                case ToolkitLogLevel.Debug:
-                    return dark ? Color.DarkGray : Color.DimGray;
-                case ToolkitLogLevel.Command:
-                    return dark ? Color.Cyan : Color.DarkCyan;
-                default:
-                    return dark ? Color.Gainsboro : Color.Black;
-            }
         }
 
         private static void ApplySimpleTheme(Control parent, Color background, Color foreground)

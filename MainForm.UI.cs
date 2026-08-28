@@ -36,7 +36,6 @@ namespace DismToolGui
         private Dictionary<string, (Label Label, TextBox TextBox)> inputFields;
 
         private Button runButton;
-        private Button themeToggleButton;
         private Button openCbsLogButton;
         private Button addPackageBrowseButton;
 
@@ -45,6 +44,7 @@ namespace DismToolGui
         private ToolStripMenuItem exportLogMenuItem;
         private ToolStripMenuItem releaseNotesMenuItem;
         private ToolStripMenuItem toolsMenuItem;
+        private ToolStripMenuItem themesMenuItem;
         private ToolStripMenuItem imageServicingMenuItem;
         private ToolStripMenuItem componentToolkitMenuItem;
         private ToolStripMenuItem logsMenuItem;
@@ -69,8 +69,11 @@ namespace DismToolGui
         private string logContent = string.Empty;
         private readonly List<(int Start, int Length, Color RequestedColor)> logEntries =
             new List<(int Start, int Length, Color RequestedColor)>();
+        private readonly List<ToolStripMenuItem> themeChoiceMenuItems =
+            new List<ToolStripMenuItem>();
         private bool isExecuting = false;
-        private bool isDark = true;
+        private AppTheme currentTheme = ThemeCatalog.GetById(
+            SettingsManager.Get("ThemeId", ThemeCatalog.Default.Id));
         private Process activeProcess;
 
         private void InitializeComponent()
@@ -110,13 +113,12 @@ namespace DismToolGui
                 Dock = DockStyle.Fill,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                ColumnCount = 4,
+                ColumnCount = 3,
                 RowCount = 1,
                 Padding = new Padding(10, 10, 10, 10)
             };
 
             topBarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            topBarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topBarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topBarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
@@ -144,7 +146,7 @@ namespace DismToolGui
             });
             commandSelector.SelectedIndexChanged += CommandSelector_SelectedIndexChanged;
 
-            runButton = new Button
+            runButton = new ThemedButton
             {
                 Text = "Execute",
                 AutoSize = true,
@@ -156,28 +158,15 @@ namespace DismToolGui
             };
             runButton.FlatAppearance.BorderSize = 0;
             runButton.Click += RunButton_Click;
-            runButton.MouseEnter += (s, e) => runButton.BackColor = isDark ? Color.DarkCyan : Color.Silver;
-            runButton.MouseLeave += (s, e) => runButton.BackColor = isDark ? Color.Teal : Color.LightGray;
-
-            themeToggleButton = new Button
+            runButton.MouseEnter += (s, e) =>
             {
-                Text = "Light mode",
-                AutoSize = true,
-                MinimumSize = new Size(120, 36),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10),
-                Margin = new Padding(0, 0, 10, 0),
-                Anchor = AnchorStyles.None
+                if (!isExecuting)
+                    runButton.BackColor = currentTheme.AccentHover;
             };
-            themeToggleButton.FlatAppearance.BorderSize = 0;
-            themeToggleButton.Click += (s, e) =>
-            {
-                isDark = !isDark;
-                ApplyTheme(isDark);
-                themeToggleButton.Text = isDark ? "Light mode" : "Dark mode";
-            };
+            runButton.MouseLeave += (s, e) =>
+                runButton.BackColor = currentTheme.Accent;
 
-            openCbsLogButton = new Button
+            openCbsLogButton = new ThemedButton
             {
                 Text = "Open CBS.log",
                 AutoSize = true,
@@ -204,8 +193,7 @@ namespace DismToolGui
 
             topBarLayout.Controls.Add(commandSelector, 0, 0);
             topBarLayout.Controls.Add(runButton, 1, 0);
-            topBarLayout.Controls.Add(themeToggleButton, 2, 0);
-            topBarLayout.Controls.Add(openCbsLogButton, 3, 0);
+            topBarLayout.Controls.Add(openCbsLogButton, 2, 0);
 
             rootLayout.Controls.Add(topBarLayout, 0, 1);
 
@@ -349,17 +337,11 @@ namespace DismToolGui
             rootLayout.Controls.Add(outputPanel, 0, 3);
 
             toolWorkspace = new ToolWorkspaceControl(
-                isDark,
+                currentTheme,
                 () => GetFieldText("WIM File Path"),
                 ApplyImageSelection);
             toolWorkspace.Visible = false;
             toolWorkspace.BackRequested += (sender, args) => HideToolWorkspace();
-            toolWorkspace.ThemeToggleRequested += (sender, args) =>
-            {
-                isDark = !isDark;
-                ApplyTheme(isDark);
-                themeToggleButton.Text = isDark ? "Light mode" : "Dark mode";
-            };
             rootLayout.Controls.Add(toolWorkspace, 0, 1);
             rootLayout.SetRowSpan(toolWorkspace, 3);
 
@@ -376,7 +358,7 @@ namespace DismToolGui
             MainMenuStrip = menuStrip;
             AcceptButton = runButton;
             commandSelector.SelectedIndex = 0;
-            ApplyTheme(isDark);
+            ApplyTheme(currentTheme);
             UpdateCommandPreview();
         }
 
@@ -470,6 +452,33 @@ namespace DismToolGui
             toolsMenuItem.DropDownItems.Add(logsMenuItem);
             toolsMenuItem.DropDownItems.Add(advancedToolsMenuItem);
 
+            themesMenuItem = new ToolStripMenuItem("Themes");
+            string lastCategory = null;
+            ToolStripMenuItem categoryMenu = null;
+            foreach (AppTheme theme in ThemeCatalog.All)
+            {
+                if (!string.Equals(lastCategory, theme.Category, StringComparison.Ordinal))
+                {
+                    lastCategory = theme.Category;
+                    categoryMenu = new ToolStripMenuItem(theme.Category);
+                    themesMenuItem.DropDownItems.Add(categoryMenu);
+                }
+
+                AppTheme selectedTheme = theme;
+                var themeItem = new ToolStripMenuItem(theme.Name)
+                {
+                    Tag = theme
+                };
+                themeItem.Click += (sender, args) => SelectTheme(selectedTheme);
+                categoryMenu.DropDownItems.Add(themeItem);
+                themeChoiceMenuItems.Add(themeItem);
+            }
+            themesMenuItem.DropDownItems.Add(new ToolStripSeparator());
+            themesMenuItem.DropDownItems.Add(new ToolStripMenuItem(
+                "Reset to DISM Dark",
+                null,
+                (sender, args) => SelectTheme(ThemeCatalog.Default)));
+
             exportLogMenuItem = new ToolStripMenuItem("Export Log", null, (s, e) =>
             {
                 using var saveDialog = new SaveFileDialog
@@ -487,14 +496,16 @@ namespace DismToolGui
 
             releaseNotesMenuItem = new ToolStripMenuItem("Release Notes", null, (s, e) =>
             {
-                using var releaseNotesForm = new ReleaseNotesForm(isDark);
+                using var releaseNotesForm = new ReleaseNotesForm(currentTheme);
                 releaseNotesForm.ShowDialog(this);
             });
 
             menuStrip.Items.Add(toolsMenuItem);
+            menuStrip.Items.Add(themesMenuItem);
             menuStrip.Items.Add(exportLogMenuItem);
             menuStrip.Items.Add(releaseNotesMenuItem);
             menuStrip.Items.Add(helpMenuItem);
+            UpdateThemeChecks();
         }
 
         private void InitializeCommandPreview()
@@ -530,7 +541,7 @@ namespace DismToolGui
                 Margin = new Padding(0, 0, 8, 6)
             };
 
-            copyCommandButton = new Button
+            copyCommandButton = new ThemedButton
             {
                 Text = "Copy",
                 AutoSize = true,
@@ -602,7 +613,7 @@ namespace DismToolGui
             };
             textBox.TextChanged += (sender, args) => UpdateCommandPreview();
 
-            addPackageBrowseButton = new Button
+            addPackageBrowseButton = new ThemedButton
             {
                 Text = "Browse...",
                 AutoSize = true,
@@ -667,133 +678,163 @@ namespace DismToolGui
             }
         }
 
-        private void ApplyTheme(bool dark)
+        private void SelectTheme(AppTheme theme, bool persist = true)
         {
-            Color background = dark ? Color.FromArgb(28, 28, 30) : Color.White;
-            Color panelBackground = dark ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color menuBackground = dark ? Color.FromArgb(35, 35, 35) : Color.Gainsboro;
-            Color foreground = dark ? Color.White : Color.Black;
-            Color textboxBg = dark ? Color.FromArgb(45, 45, 45) : Color.White;
-            Color textboxFg = dark ? Color.Cyan : Color.Black;
-            Color outputBg = dark ? Color.FromArgb(20, 20, 20) : Color.White;
-            Color outputFg = dark ? Color.LightGreen : Color.Black;
+            currentTheme = theme ?? ThemeCatalog.Default;
+            if (persist)
+            {
+                try
+                {
+                    SettingsManager.Set("ThemeId", currentTheme.Id);
+                }
+                catch (IOException)
+                {
+                    // Apply the selection for this session even if settings are unavailable.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Apply the selection for this session even if settings are unavailable.
+                }
+            }
 
-            BackColor = background;
-            rootLayout.BackColor = background;
-            topBarLayout.BackColor = panelBackground;
-            inputPanel.BackColor = panelBackground;
-            outputPanel.BackColor = outputBg;
+            UpdateThemeChecks();
+            ApplyTheme(currentTheme);
+        }
 
-            menuStrip.BackColor = menuBackground;
-            menuStrip.ForeColor = foreground;
-            menuStrip.Renderer = new ToolStripProfessionalRenderer(
-                new ThemedMenuColorTable(dark));
+        private void UpdateThemeChecks()
+        {
+            foreach (ToolStripMenuItem item in themeChoiceMenuItems)
+            {
+                var itemTheme = item.Tag as AppTheme;
+                item.Checked = itemTheme != null &&
+                    string.Equals(itemTheme.Id, currentTheme.Id, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private void ApplyTheme(AppTheme theme)
+        {
+            currentTheme = theme ?? ThemeCatalog.Default;
+            Color controlForeground = isExecuting
+                ? currentTheme.DisabledForeground
+                : currentTheme.Foreground;
+            Color inputForeground = isExecuting
+                ? currentTheme.DisabledForeground
+                : currentTheme.InputForeground;
+
+            BackColor = currentTheme.Background;
+            ForeColor = currentTheme.Foreground;
+            rootLayout.BackColor = currentTheme.Background;
+            topBarLayout.BackColor = currentTheme.PanelBackground;
+            inputPanel.BackColor = currentTheme.PanelBackground;
+            outputPanel.BackColor = currentTheme.OutputBackground;
+
+            menuStrip.BackColor = currentTheme.MenuBackground;
+            menuStrip.ForeColor = currentTheme.Foreground;
+            menuStrip.Renderer = new AccessibleMenuRenderer(currentTheme);
             foreach (ToolStripItem item in menuStrip.Items)
-                ApplyMenuItemTheme(item, menuBackground, foreground);
+                ApplyMenuItemTheme(item, currentTheme);
 
-            Color busyForeground = dark
-                ? Color.FromArgb(155, 155, 155)
-                : Color.DimGray;
-            Color controlForeground = isExecuting ? busyForeground : foreground;
-            Color inputForeground = isExecuting ? busyForeground : textboxFg;
-
-            commandSelector.BackColor = textboxBg;
+            commandSelector.BackColor = currentTheme.InputBackground;
             commandSelector.ForeColor = inputForeground;
 
-            commandPreviewGroup.BackColor = panelBackground;
+            commandPreviewGroup.BackColor = currentTheme.PanelBackground;
             commandPreviewGroup.ForeColor = controlForeground;
-            commandPreviewBox.BackColor = textboxBg;
+            commandPreviewBox.BackColor = currentTheme.InputBackground;
             commandPreviewBox.ForeColor = inputForeground;
-            copyCommandButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
+            ThemeStyler.ApplyButton(copyCommandButton, currentTheme);
             copyCommandButton.ForeColor = controlForeground;
-            confirmCommandCheckBox.BackColor = panelBackground;
+            confirmCommandCheckBox.BackColor = currentTheme.PanelBackground;
             confirmCommandCheckBox.ForeColor = controlForeground;
-            mountReadOnlyCheckBox.BackColor = panelBackground;
+            mountReadOnlyCheckBox.BackColor = currentTheme.PanelBackground;
             mountReadOnlyCheckBox.ForeColor = controlForeground;
 
-            runButton.BackColor = dark ? Color.Teal : Color.LightGray;
-            runButton.ForeColor = controlForeground;
-
-            themeToggleButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-            themeToggleButton.ForeColor = foreground;
-
-            openCbsLogButton.BackColor = dark ? Color.FromArgb(70, 70, 70) : Color.Gainsboro;
-            openCbsLogButton.ForeColor = foreground;
-
-            addPackageBrowseButton.BackColor = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
+            ThemeStyler.ApplyButton(runButton, currentTheme, true);
+            runButton.ForeColor = isExecuting
+                ? currentTheme.AccentDisabledForeground
+                : currentTheme.AccentForeground;
+            ThemeStyler.ApplyButton(openCbsLogButton, currentTheme);
+            ThemeStyler.ApplyButton(addPackageBrowseButton, currentTheme);
             addPackageBrowseButton.ForeColor = controlForeground;
 
-            outputBox.BackColor = outputBg;
-            outputBox.ForeColor = outputFg;
-            versionLabel.ForeColor = Color.Gray;
-            RecolorLog(dark);
+            outputBox.BackColor = currentTheme.OutputBackground;
+            outputBox.ForeColor = currentTheme.OutputForeground;
+            versionLabel.ForeColor = currentTheme.Footer;
+            RecolorLog();
 
-            imageTypeGroup.BackColor = panelBackground;
+            imageTypeGroup.BackColor = currentTheme.PanelBackground;
             imageTypeGroup.ForeColor = controlForeground;
-            radioOnline.BackColor = panelBackground;
+            radioOnline.BackColor = currentTheme.PanelBackground;
             radioOnline.ForeColor = inputForeground;
-            radioOffline.BackColor = panelBackground;
+            radioOffline.BackColor = currentTheme.PanelBackground;
             radioOffline.ForeColor = inputForeground;
 
-            unmountModeGroup.BackColor = panelBackground;
+            unmountModeGroup.BackColor = currentTheme.PanelBackground;
             unmountModeGroup.ForeColor = controlForeground;
-            radioUnmountDiscard.BackColor = panelBackground;
+            radioUnmountDiscard.BackColor = currentTheme.PanelBackground;
             radioUnmountDiscard.ForeColor = inputForeground;
-            radioUnmountCommit.BackColor = panelBackground;
+            radioUnmountCommit.BackColor = currentTheme.PanelBackground;
             radioUnmountCommit.ForeColor = inputForeground;
-            radioUnmountAppend.BackColor = panelBackground;
+            radioUnmountAppend.BackColor = currentTheme.PanelBackground;
             radioUnmountAppend.ForeColor = inputForeground;
 
             foreach (var field in inputFields.Values)
             {
-                field.Label.BackColor = panelBackground;
+                field.Label.BackColor = currentTheme.PanelBackground;
                 field.Label.ForeColor = controlForeground;
-                field.TextBox.BackColor = textboxBg;
+                field.TextBox.BackColor = currentTheme.InputBackground;
                 field.TextBox.ForeColor = inputForeground;
             }
 
-            toolWorkspace?.ApplyTheme(dark);
+            toolWorkspace?.ApplyTheme(currentTheme);
+            UpdateThemeChecks();
         }
 
-        private Color ResolveLogColor(Color requestedColor, bool dark)
+        private Color ResolveLogColor(Color requestedColor, AppTheme theme)
         {
             if (requestedColor == Color.White)
-                return dark ? Color.Gainsboro : Color.Black;
+                return theme.LogInfo;
             if (requestedColor == Color.Yellow)
-                return dark ? Color.Gold : Color.DarkGoldenrod;
+                return theme.LogWarning;
             if (requestedColor == Color.LightBlue)
-                return dark ? Color.DeepSkyBlue : Color.RoyalBlue;
+                return theme.LogProcess;
             if (requestedColor == Color.Green)
-                return dark ? Color.LightGreen : Color.DarkGreen;
+                return theme.LogSuccess;
             if (requestedColor == Color.Red)
-                return dark ? Color.IndianRed : Color.Firebrick;
+                return theme.LogError;
             if (requestedColor == Color.Orange)
-                return dark ? Color.Orange : Color.DarkOrange;
+                return theme.LogCommand;
 
-            return requestedColor;
+            return ThemeContrast.Ensure(theme.OutputBackground, requestedColor, 4.5);
         }
 
-        private static void ApplyMenuItemTheme(
-            ToolStripItem item,
-            Color background,
-            Color foreground)
+        private static void ApplyMenuItemTheme(ToolStripItem item, AppTheme theme)
         {
-            item.BackColor = background;
-            item.ForeColor = foreground;
+            item.BackColor = theme.MenuBackground;
+            item.ForeColor = item.Enabled ? theme.Foreground : theme.DisabledForeground;
 
             if (!(item is ToolStripMenuItem menuItem))
                 return;
 
-            menuItem.DropDown.BackColor = background;
-            menuItem.DropDown.ForeColor = foreground;
+            menuItem.DropDown.BackColor = theme.MenuBackground;
+            menuItem.DropDown.ForeColor = theme.Foreground;
             if (menuItem.DropDown is ToolStripDropDownMenu dropDownMenu)
             {
                 dropDownMenu.ShowImageMargin = false;
-                dropDownMenu.ShowCheckMargin = false;
+                dropDownMenu.ShowCheckMargin = ContainsThemeChoices(menuItem);
             }
 
             foreach (ToolStripItem child in menuItem.DropDownItems)
-                ApplyMenuItemTheme(child, background, foreground);
+                ApplyMenuItemTheme(child, theme);
+        }
+
+        private static bool ContainsThemeChoices(ToolStripMenuItem menuItem)
+        {
+            foreach (ToolStripItem child in menuItem.DropDownItems)
+            {
+                if (child.Tag is AppTheme)
+                    return true;
+            }
+            return false;
         }
 
         private void ApplyApplicationIcon()
@@ -818,7 +859,11 @@ namespace DismToolGui
             isExecuting = executing;
             bool inputsEnabled = !executing;
 
-            runButton.Enabled = inputsEnabled;
+            // Keep the owner-drawn button enabled so its busy text uses the
+            // theme's readable disabled color. The click handler rejects a
+            // second execution while a command is running.
+            runButton.Enabled = true;
+            runButton.TabStop = inputsEnabled;
             commandSelector.Enabled = inputsEnabled;
             SetChoiceControlState(radioOnline, inputsEnabled);
             SetChoiceControlState(radioOffline, inputsEnabled);
@@ -839,7 +884,7 @@ namespace DismToolGui
 
             runButton.Text = executing ? "Running..." : "Execute";
             UpdateCommandPreview();
-            ApplyTheme(isDark);
+            ApplyTheme(currentTheme);
         }
 
         private static void SetChoiceControlState(
@@ -863,6 +908,25 @@ namespace DismToolGui
             choiceControl.TabStop = interactive;
         }
 
+        private sealed class AccessibleMenuRenderer : ToolStripProfessionalRenderer
+        {
+            private readonly AppTheme theme;
+
+            public AccessibleMenuRenderer(AppTheme theme)
+                : base(new ThemedMenuColorTable(theme))
+            {
+                this.theme = theme;
+            }
+
+            protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+            {
+                e.TextColor = e.Item.Enabled
+                    ? theme.Foreground
+                    : theme.DisabledForeground;
+                base.OnRenderItemText(e);
+            }
+        }
+
         private sealed class ThemedMenuColorTable : ProfessionalColorTable
         {
             private readonly Color background;
@@ -870,13 +934,13 @@ namespace DismToolGui
             private readonly Color border;
             private readonly Color separator;
 
-            public ThemedMenuColorTable(bool dark)
+            public ThemedMenuColorTable(AppTheme theme)
             {
                 UseSystemColors = false;
-                background = dark ? Color.FromArgb(35, 35, 35) : Color.Gainsboro;
-                selectedBackground = dark ? Color.FromArgb(64, 64, 64) : Color.Silver;
-                border = dark ? Color.FromArgb(82, 82, 82) : Color.DarkGray;
-                separator = dark ? Color.FromArgb(95, 95, 95) : Color.DarkGray;
+                background = theme.MenuBackground;
+                selectedBackground = theme.ButtonBackground;
+                border = theme.Border;
+                separator = theme.Border;
             }
 
             public override Color ToolStripDropDownBackground => background;
@@ -895,7 +959,7 @@ namespace DismToolGui
             public override Color SeparatorLight => background;
         }
 
-        private void RecolorLog(bool dark)
+        private void RecolorLog()
         {
             if (outputBox == null || outputBox.TextLength == 0)
                 return;
@@ -909,7 +973,7 @@ namespace DismToolGui
                     continue;
 
                 outputBox.Select(entry.Start, entry.Length);
-                outputBox.SelectionColor = ResolveLogColor(entry.RequestedColor, dark);
+                outputBox.SelectionColor = ResolveLogColor(entry.RequestedColor, currentTheme);
             }
 
             outputBox.Select(selectionStart, selectionLength);

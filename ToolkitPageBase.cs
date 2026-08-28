@@ -40,17 +40,21 @@ namespace DismToolGui
             return false;
         }
 
-        public virtual void ApplyTheme(bool dark)
+        public virtual void ApplyTheme(AppTheme theme)
         {
-            DarkTheme = dark;
-            Color background = dark ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color foreground = dark ? Color.White : Color.Black;
-            BackColor = background;
-            ForeColor = foreground;
-            ApplyThemeRecursive(this, dark, background, foreground);
+            CurrentTheme = theme ?? ThemeCatalog.Default;
+            BackColor = CurrentTheme.PanelBackground;
+            ForeColor = CurrentTheme.Foreground;
+            ThemeStyler.ApplyControlTree(this, CurrentTheme);
         }
 
-        protected bool DarkTheme { get; private set; } = true;
+        public void ApplyTheme(bool dark)
+        {
+            ApplyTheme(dark ? ThemeCatalog.Default : ThemeCatalog.DefaultLight);
+        }
+
+        protected AppTheme CurrentTheme { get; private set; } = ThemeCatalog.Default;
+        protected bool DarkTheme => CurrentTheme.IsDark;
 
         protected CancellationToken BeginOperation()
         {
@@ -83,7 +87,7 @@ namespace DismToolGui
 
         protected static Button CreateButton(string text, int minimumWidth = 100)
         {
-            var button = new Button
+            var button = new ThemedButton
             {
                 Text = text,
                 AutoSize = true,
@@ -186,55 +190,5 @@ namespace DismToolGui
             };
         }
 
-        private static void ApplyThemeRecursive(
-            Control parent,
-            bool dark,
-            Color background,
-            Color foreground)
-        {
-            Color inputBackground = dark ? Color.FromArgb(45, 45, 48) : Color.White;
-            Color buttonBackground = dark ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-            Color border = dark ? Color.DimGray : Color.DarkGray;
-
-            foreach (Control control in parent.Controls)
-            {
-                if (control is TextBoxBase textBox)
-                {
-                    textBox.BackColor = inputBackground;
-                    textBox.ForeColor = foreground;
-                }
-                else if (control is ComboBox comboBox)
-                {
-                    comboBox.BackColor = inputBackground;
-                    comboBox.ForeColor = foreground;
-                }
-                else if (control is Button button)
-                {
-                    button.BackColor = buttonBackground;
-                    button.ForeColor = foreground;
-                    button.FlatAppearance.BorderColor = border;
-                }
-                else if (control is DataGridView grid)
-                {
-                    grid.BackgroundColor = inputBackground;
-                    grid.GridColor = border;
-                    grid.DefaultCellStyle.BackColor = inputBackground;
-                    grid.DefaultCellStyle.ForeColor = foreground;
-                    grid.DefaultCellStyle.SelectionBackColor = dark ? Color.Teal : Color.SteelBlue;
-                    grid.DefaultCellStyle.SelectionForeColor = Color.White;
-                    grid.ColumnHeadersDefaultCellStyle.BackColor = buttonBackground;
-                    grid.ColumnHeadersDefaultCellStyle.ForeColor = foreground;
-                    grid.EnableHeadersVisualStyles = false;
-                }
-                else
-                {
-                    control.BackColor = background;
-                    control.ForeColor = foreground;
-                }
-
-                if (control.HasChildren)
-                    ApplyThemeRecursive(control, dark, background, foreground);
-            }
-        }
     }
 }

@@ -40,12 +40,18 @@ namespace DismToolGui
             "• Fixed command result reporting and offline servicing behavior";
 
         public ReleaseNotesForm()
-            : this(true)
+            : this(ThemeCatalog.Default)
         {
         }
 
         internal ReleaseNotesForm(bool darkTheme)
+            : this(darkTheme ? ThemeCatalog.Default : ThemeCatalog.DefaultLight)
         {
+        }
+
+        internal ReleaseNotesForm(AppTheme theme)
+        {
+            theme = theme ?? ThemeCatalog.Default;
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             Text = "Release Notes";
@@ -56,18 +62,17 @@ namespace DismToolGui
             ShowIcon = false;
             MinimizeBox = false;
 
-            Color background = darkTheme ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color textBackground = darkTheme ? Color.FromArgb(20, 20, 20) : Color.White;
-            Color foreground = darkTheme ? Color.Gainsboro : Color.Black;
-
-            BackColor = background;
+            BackColor = theme.Background;
+            ForeColor = theme.Foreground;
 
             var rootLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 2,
-                Padding = new Padding(12)
+                Padding = new Padding(12),
+                BackColor = theme.PanelBackground,
+                ForeColor = theme.Foreground
             };
             rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -76,8 +81,8 @@ namespace DismToolGui
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                BackColor = textBackground,
-                ForeColor = foreground,
+                BackColor = theme.OutputBackground,
+                ForeColor = theme.OutputForeground,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 10),
                 ScrollBars = RichTextBoxScrollBars.Vertical,
@@ -85,7 +90,7 @@ namespace DismToolGui
                 Text = Notes
             };
 
-            var closeButton = new Button
+            var closeButton = new ThemedButton
             {
                 Text = "Close",
                 AutoSize = true,
@@ -93,11 +98,9 @@ namespace DismToolGui
                 Anchor = AnchorStyles.Right,
                 Margin = new Padding(0, 10, 0, 0),
                 FlatStyle = FlatStyle.Flat,
-                UseVisualStyleBackColor = false,
-                BackColor = darkTheme ? Color.FromArgb(64, 64, 64) : Color.Gainsboro,
-                ForeColor = foreground
+                UseVisualStyleBackColor = false
             };
-            closeButton.FlatAppearance.BorderColor = darkTheme ? Color.Gray : Color.DarkGray;
+            ThemeStyler.ApplyButton(closeButton, theme);
             closeButton.Click += (s, e) => Close();
 
             rootLayout.Controls.Add(notesBox, 0, 0);

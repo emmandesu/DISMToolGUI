@@ -10,7 +10,7 @@ namespace DismToolGui
 {
     internal sealed class MountedImagesForm : Form
     {
-        private readonly bool darkTheme;
+        private readonly AppTheme currentTheme;
         private readonly DataGridView mountedGrid;
         private readonly RichTextBox outputBox;
         private readonly Button refreshButton;
@@ -23,17 +23,21 @@ namespace DismToolGui
         private bool isBusy;
 
         public MountedImagesForm(bool darkTheme, bool autoRefresh = true)
-            : this(darkTheme, autoRefresh, null, false)
+            : this(
+                darkTheme ? ThemeCatalog.Default : ThemeCatalog.DefaultLight,
+                autoRefresh,
+                null,
+                false)
         {
         }
 
         internal MountedImagesForm(
-            bool darkTheme,
+            AppTheme theme,
             bool autoRefresh,
             Action<string, bool> logSink,
             bool embeddedMode)
         {
-            this.darkTheme = darkTheme;
+            currentTheme = theme ?? ThemeCatalog.Default;
             this.logSink = logSink;
 
             Text = "Mounted Image Manager";
@@ -152,7 +156,7 @@ namespace DismToolGui
 
         private static Button CreateButton(string text, int width)
         {
-            return new Button
+            return new ThemedButton
             {
                 Text = text,
                 AutoSize = true,
@@ -406,8 +410,8 @@ namespace DismToolGui
             outputBox.SelectionStart = outputBox.TextLength;
             outputBox.SelectionLength = 0;
             outputBox.SelectionColor = isError
-                ? (darkTheme ? Color.IndianRed : Color.Firebrick)
-                : (darkTheme ? Color.Gainsboro : Color.Black);
+                ? currentTheme.LogError
+                : currentTheme.LogInfo;
             outputBox.AppendText(message + Environment.NewLine);
             outputBox.ScrollToCaret();
         }
@@ -424,17 +428,12 @@ namespace DismToolGui
 
         private void ApplyTheme(params Control[] containers)
         {
-            Color background = darkTheme ? Color.FromArgb(28, 28, 30) : Color.WhiteSmoke;
-            Color foreground = darkTheme ? Color.White : Color.Black;
-            Color inputBackground = darkTheme ? Color.FromArgb(45, 45, 48) : Color.White;
-            Color buttonBackground = darkTheme ? Color.FromArgb(64, 64, 64) : Color.Gainsboro;
-
-            BackColor = background;
-            ForeColor = foreground;
+            BackColor = currentTheme.Background;
+            ForeColor = currentTheme.Foreground;
             foreach (Control control in containers)
             {
-                control.BackColor = background;
-                control.ForeColor = foreground;
+                control.BackColor = currentTheme.PanelBackground;
+                control.ForeColor = currentTheme.Foreground;
             }
 
             foreach (Button button in new[]
@@ -446,23 +445,12 @@ namespace DismToolGui
                 discardButton,
                 cleanupButton
             })
-            {
-                button.BackColor = buttonBackground;
-                button.ForeColor = foreground;
-            }
+                ThemeStyler.ApplyButton(button, currentTheme);
 
-            outputBox.BackColor = darkTheme ? Color.FromArgb(20, 20, 20) : Color.White;
-            outputBox.ForeColor = foreground;
+            outputBox.BackColor = currentTheme.OutputBackground;
+            outputBox.ForeColor = currentTheme.OutputForeground;
 
-            mountedGrid.BackgroundColor = inputBackground;
-            mountedGrid.GridColor = darkTheme ? Color.DimGray : Color.LightGray;
-            mountedGrid.DefaultCellStyle.BackColor = inputBackground;
-            mountedGrid.DefaultCellStyle.ForeColor = foreground;
-            mountedGrid.DefaultCellStyle.SelectionBackColor = darkTheme ? Color.Teal : Color.SteelBlue;
-            mountedGrid.DefaultCellStyle.SelectionForeColor = Color.White;
-            mountedGrid.ColumnHeadersDefaultCellStyle.BackColor = buttonBackground;
-            mountedGrid.ColumnHeadersDefaultCellStyle.ForeColor = foreground;
-            mountedGrid.EnableHeadersVisualStyles = false;
+            ThemeStyler.ApplyGrid(mountedGrid, currentTheme);
         }
 
         private sealed class MountedImageInfo
