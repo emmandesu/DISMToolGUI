@@ -14,13 +14,23 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.8.3</Version>
+	<Version>1.8.5</Version>
 	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
 	<PackageIcon>2.png</PackageIcon>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+Version 1.8.5-stable — Accessible Theme System
+
+Replaced the separate Light and Dark buttons with a categorized Themes menu
+Added 50 curated palettes spanning accessibility, Fluent, developer, terminal, and color styles
+Persisted the selected theme and applied changes immediately across the main UI and integrated Tools
+Added contrast-validated colors for controls, menus, grids, dialogs, and color-coded logs
+Kept running and disabled control text readable across every included palette
+
+---
 
 Version 1.8.3-stable — SFCFix Signature Security
 
@@ -138,7 +148,7 @@ Renamed export destination field for clarity
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.8.3</FileVersion>
+	<FileVersion>1.8.5</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>

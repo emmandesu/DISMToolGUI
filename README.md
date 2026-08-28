@@ -1,10 +1,10 @@
 # DISM Tool GUI
 
-[![Version](https://img.shields.io/badge/version-1.8.3--stable-0078d4)](https://github.com/emmandesu/DISMToolGUI/releases)
+[![Version](https://img.shields.io/badge/version-1.8.5--stable-0078d4)](https://github.com/emmandesu/DISMToolGUI/releases)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)
 ![Framework](https://img.shields.io/badge/framework-.NET%20Framework%204.8-512bd4)
 
-DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File Checker**, component recovery, and offline-registry operations. It combines guided inputs, live output, image management, component export, and diagnostic tools in one responsive light/dark interface.
+DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File Checker**, component recovery, and offline-registry operations. It combines guided inputs, live output, image management, component export, and diagnostic tools in one responsive, customizable interface.
 
 ![DISM Tool GUI showing RestoreHealth and its command preview](docs/screenshots/restorehealth-command-preview.png)
 

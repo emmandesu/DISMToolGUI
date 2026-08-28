@@ -6,6 +6,12 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.5-stable\r\n\r\n" +
+            "• Replaced the separate Light and Dark buttons with a categorized Themes menu\r\n" +
+            "• Added 50 curated palettes spanning accessibility, Fluent, developer, terminal, and color styles\r\n" +
+            "• Persisted the selected theme and applied changes immediately across the main UI and integrated Tools\r\n" +
+            "• Added contrast-validated colors for controls, menus, grids, dialogs, and color-coded logs\r\n" +
+            "• Kept running and disabled control text readable across every included palette\r\n\r\n" +
             "Version 1.8.3-stable\r\n\r\n" +
             "• Required Windows Authenticode trust and an exact match to the official Sysnative signer certificate\r\n" +
             "• Blocked unsigned or unexpected SFCFix executables with no run-anyway path\r\n" +
