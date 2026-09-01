@@ -165,6 +165,12 @@ Renamed export destination field for clarity
     <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Security\DISM.cer" />
+    <EmbeddedResource Include="Security\DISM.cer">
+      <LogicalName>DismToolGui.Security.DISM.cer</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\..\..\Downloads\2.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

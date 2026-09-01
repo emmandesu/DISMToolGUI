@@ -622,8 +622,13 @@ namespace DismToolGui
 
         public static bool VerifyEmbeddedSignature(string filePath)
         {
+            return GetEmbeddedSignatureVerificationStatus(filePath) == 0;
+        }
+
+        public static int GetEmbeddedSignatureVerificationStatus(string filePath)
+        {
             if (!File.Exists(filePath))
-                return false;
+                return unchecked((int)0x800B0100);
 
             IntPtr filePathPointer = Marshal.StringToCoTaskMemUni(filePath);
             IntPtr fileInfoPointer = IntPtr.Zero;
@@ -653,7 +658,7 @@ namespace DismToolGui
                 return WinVerifyTrust(
                     IntPtr.Zero,
                     ref action,
-                    ref trustData) == 0;
+                    ref trustData);
             }
             finally
             {

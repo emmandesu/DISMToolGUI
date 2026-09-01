@@ -14,6 +14,15 @@ namespace DismToolGui
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
+                ApplicationIntegrityResult integrity =
+                    ApplicationIntegrityVerifier.VerifyCurrentExecutable();
+                if (!integrity.IsValid)
+                {
+                    using var integrityError = new IntegrityErrorForm(integrity.FailureReason);
+                    integrityError.ShowDialog();
+                    return;
+                }
+
                 if (!Settings.Default.LicenseAccepted)
                 {
                     using var licenseForm = new LicenseForm();
