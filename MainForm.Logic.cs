@@ -594,6 +594,10 @@ namespace DismToolGui
         {
             WriteLog("Please wait... command is in progress.", Color.Yellow);
             WriteLog($"Executing: {exePath} {arguments}", Color.LightBlue);
+            bool isSfcCommand = string.Equals(
+                Path.GetFileName(exePath),
+                "sfc.exe",
+                StringComparison.OrdinalIgnoreCase);
 
             var startInfo = new ProcessStartInfo
             {
@@ -613,14 +617,12 @@ namespace DismToolGui
 
             process.OutputDataReceived += (s, e) =>
             {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                    WriteLog(e.Data, Color.White);
+                WriteProcessOutput(e.Data, Color.White, isSfcCommand);
             };
 
             process.ErrorDataReceived += (s, e) =>
             {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                    WriteLog(e.Data, Color.Red);
+                WriteProcessOutput(e.Data, Color.Red, isSfcCommand);
             };
 
             try
@@ -646,6 +648,58 @@ namespace DismToolGui
                 if (ReferenceEquals(activeProcess, process))
                     activeProcess = null;
             }
+        }
+
+        private void WriteProcessOutput(string output, Color color, bool isSfcCommand)
+        {
+            if (!isSfcCommand)
+            {
+                if (!string.IsNullOrWhiteSpace(output))
+                    WriteLog(output, color);
+                return;
+            }
+
+            if (!SfcOutputParser.TryParse(
+                    output,
+                    out string message,
+                    out int? progressPercentage))
+            {
+                return;
+            }
+
+            if (progressPercentage.HasValue)
+            {
+                UpdateExecutionProgress(progressPercentage.Value);
+                return;
+            }
+
+            WriteLog(message, color);
+        }
+
+        private void UpdateExecutionProgress(int percentage)
+        {
+            if (runButton == null || runButton.IsDisposed || IsDisposed || Disposing)
+                return;
+
+            if (runButton.InvokeRequired)
+            {
+                try
+                {
+                    runButton.BeginInvoke(new Action(() => UpdateExecutionProgress(percentage)));
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The form was disposed while SFC progress was arriving.
+                }
+                catch (InvalidOperationException)
+                {
+                    // The window handle was destroyed while SFC progress was arriving.
+                }
+                return;
+            }
+
+            if (isExecuting)
+                runButton.Text = $"Running... {percentage}%";
         }
 
         private void LaunchMsuExpanderTool()
