@@ -82,14 +82,15 @@ Use **Tools → Logs** to open `CBS.log`, `DISM.log`, or `SetupAPI.dev.log` from
 - Registry hives can only be unloaded by the app when they were loaded by the current app session.
 - SFCFix downloads never execute automatically and display source, hash, and signature information before launch.
 
-### MSU Expander Tool
+### MSU / CAB Expander
 
-- Extract an `.msu` package to a selected folder.
-- Optionally expand CAB payloads into `CAB_Extracted`.
-- Keep CAB output separated by relative path to prevent name collisions.
-- View progress and extraction output without freezing the window.
+Open **Tools → Package Tools → MSU / CAB Expander** to:
 
-![Built-in MSU Expander Tool launched from the main window](docs/screenshots/msu-expander-tool.png)
+- extract an `.msu` or `.cab` package to a selected folder;
+- optionally expand nested CAB payloads recursively into `CAB_Extracted`;
+- keep nested output separated by relative path without renaming or deleting source CAB files;
+- review the exact `expand.exe` command and captured diagnostic output;
+- cancel an active extraction while leaving partial output available for inspection.
 
 ## Quick start
 
@@ -110,7 +111,7 @@ Use **Tools → Logs** to open `CBS.log`, `DISM.log`, or `SetupAPI.dev.log` from
 | Get Installed Packages | Online | Lists packages installed on the running system |
 | Remove Package | Online or offline | Removes a package by its DISM package identity |
 | Export WIM | Image file | Exports a selected index directly to a destination WIM |
-| MSU Expander Tool | Package file | Extracts MSU contents and optionally expands nested CAB payloads |
+| MSU / CAB Expander | Package file | Extracts MSU or CAB contents and optionally expands nested CAB payloads from Tools → Package Tools |
 | SFC - Scannow | Online | Verifies protected system files and repairs detected problems |
 | SFC - VerifyOnly | Online | Verifies protected system files without performing repairs |
 | Component Export | WinSxS and registry | Exports a selected component version, manifests, optional registry keys, and repair package |
@@ -172,6 +173,7 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 | A WIM will not mount | Confirm the file exists, the index is positive, and the mount directory is empty |
 | A mounted image is inaccessible | Open Mounted Image Manager, refresh the list, and try **Remount** |
 | RestoreHealth or package servicing fails | Review the live output and open `CBS.log` from the main window |
+| MSU or CAB expansion fails | Review the shared Tools log for the actual `expand.exe` exit code and diagnostic output |
 | A component search takes a long time | WinSxS searches and size calculations can be cancelled safely from the tool workspace |
 | A hive will not unload | Close Registry Editor and any process using the mounted key, then try again |
 | Sysnative requires browser verification | Approve opening the official download, save SFCFix.exe, then select it with **Browse**; hash and signature verification still run before launch |
@@ -185,7 +187,7 @@ When a repair source is supplied, the current workflow adds `/LimitAccess`, so D
 - Active servicing commands cannot be cancelled from the GUI; this avoids interrupting DISM during a critical write operation.
 - Component-tool searches and file copies can be cancelled; active DISM servicing commands remain intentionally non-cancellable.
 - SFCFix is an external interactive utility and may open its own console after it is launched from the integrated workspace.
-- Package installation accepts individual CAB and MSU files; the MSU Expander remains available when package contents must be extracted instead.
+- Package installation accepts individual CAB and MSU files; use **Tools → Package Tools → MSU / CAB Expander** when package contents must be extracted instead.
 - Direct online MSU installation requires Windows 11, version 21H2 or newer; older Windows targets require offline MSU servicing.
 
 ## Feedback and issues

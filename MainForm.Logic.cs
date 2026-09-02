@@ -71,7 +71,6 @@ namespace DismToolGui
                     SetFieldVisibility("WIM File Path", "Index", "Destination Image File");
                     break;
 
-                case "MSU Expander Tool":
                 case "Get Installed Packages":
                 case "SFC - Scannow":
                 case "SFC - VerifyOnly":
@@ -245,13 +244,6 @@ namespace DismToolGui
                             break;
                         }
 
-                    case "MSU Expander Tool":
-                        {
-                            LaunchMsuExpanderTool();
-                            WriteLog("MSU Expander Tool launched.", Color.Green);
-                            break;
-                        }
-
                     case "SFC - Scannow":
                         if (!ConfirmCommandExecution(cmd))
                             break;
@@ -369,8 +361,7 @@ namespace DismToolGui
             string selectedCommand = commandSelector?.SelectedItem?.ToString();
             commandPreviewBox.Text = BuildCommandPreview(selectedCommand);
             copyCommandButton.Enabled =
-                !string.IsNullOrWhiteSpace(commandPreviewBox.Text) &&
-                selectedCommand != "MSU Expander Tool";
+                !string.IsNullOrWhiteSpace(commandPreviewBox.Text);
         }
 
         private void CopyCommandPreview()
@@ -430,8 +421,6 @@ namespace DismToolGui
                     return $"{dismPath} {imageTarget} /Remove-Package /PackageName:\"{package}\"";
                 case "Export WIM":
                     return $"{dismPath} /Export-Image /SourceImageFile:\"{wim}\" /SourceIndex:{index} /DestinationImageFile:\"{destination}\"";
-                case "MSU Expander Tool":
-                    return "Built-in MSU Expander Tool (streamed securely to Windows PowerShell)";
                 case "SFC - Scannow":
                     return $"{sfcPath} /scannow";
                 case "SFC - VerifyOnly":
@@ -700,305 +689,6 @@ namespace DismToolGui
 
             if (isExecuting)
                 runButton.Text = $"Running... {percentage}%";
-        }
-
-        private void LaunchMsuExpanderTool()
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = powershellPath,
-                Arguments = "-NoProfile -STA -Command -",
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                CreateNoWindow = true
-            };
-
-            var process = new Process
-            {
-                StartInfo = startInfo,
-                EnableRaisingEvents = true
-            };
-
-            process.Exited += (sender, args) => process.Dispose();
-
-            try
-            {
-                if (!process.Start())
-                    throw new InvalidOperationException("Unable to start the MSU Expander Tool.");
-
-                process.StandardInput.Write(GetMsuExpanderScript());
-                process.StandardInput.Close();
-            }
-            catch
-            {
-                process.Dispose();
-                throw;
-            }
-        }
-
-        private string GetMsuExpanderScript()
-        {
-            return string.Join(Environment.NewLine, new[]
-            {
-                "Add-Type -AssemblyName System.Windows.Forms",
-                "Add-Type -AssemblyName System.Drawing",
-                "$ErrorActionPreference = \"Stop\"",
-                "",
-                "# --- Form ---",
-                "$form = New-Object System.Windows.Forms.Form",
-                "$form.Text = \"MSU Expander Tool v2.2\"",
-                "$form.ClientSize = New-Object System.Drawing.Size(620,460)",
-                "$form.MinimumSize = New-Object System.Drawing.Size(560,420)",
-                "$form.StartPosition = \"CenterScreen\"",
-                "",
-                "# Scale the window and controls with the display DPI",
-                "$form.AutoScaleDimensions = New-Object System.Drawing.SizeF(96,96)",
-                "$form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi",
-                "",
-                "# Consistent font",
-                "$uiFont = New-Object System.Drawing.Font(\"Segoe UI\",9)",
-                "$form.Font = $uiFont",
-                "",
-                "# --- MSU Label ---",
-                "$lblMSU = New-Object System.Windows.Forms.Label",
-                "$lblMSU.Text = \"MSU File:\"",
-                "$lblMSU.Size = New-Object System.Drawing.Size(80,23)",
-                "$lblMSU.Location = New-Object System.Drawing.Point(10,20)",
-                "$lblMSU.TextAlign = \"MiddleLeft\"",
-                "$form.Controls.Add($lblMSU)",
-                "",
-                "# --- MSU Textbox ---",
-                "$txtMSU = New-Object System.Windows.Forms.TextBox",
-                "$txtMSU.Location = New-Object System.Drawing.Point(90,20)",
-                "$txtMSU.Size = New-Object System.Drawing.Size(400,23)",
-                "$txtMSU.Anchor = \"Top,Left,Right\"",
-                "$txtMSU.AutoCompleteMode = \"SuggestAppend\"",
-                "$txtMSU.AutoCompleteSource = \"FileSystem\"",
-                "$form.Controls.Add($txtMSU)",
-                "",
-                "# --- Browse MSU ---",
-                "$btnBrowseMSU = New-Object System.Windows.Forms.Button",
-                "$btnBrowseMSU.Text = \"Browse\"",
-                "$btnBrowseMSU.Size = New-Object System.Drawing.Size(75,23)",
-                "$btnBrowseMSU.Location = New-Object System.Drawing.Point(500,20)",
-                "$btnBrowseMSU.Anchor = \"Top,Right\"",
-                "$btnBrowseMSU.Add_Click({",
-                "    $dialog = New-Object System.Windows.Forms.OpenFileDialog",
-                "    $dialog.Filter = \"MSU Files (*.msu)|*.msu\"",
-                "    if ($dialog.ShowDialog() -eq \"OK\") {",
-                "        $txtMSU.Text = $dialog.FileName",
-                "    }",
-                "})",
-                "$form.Controls.Add($btnBrowseMSU)",
-                "",
-                "# --- Destination Label ---",
-                "$lblDest = New-Object System.Windows.Forms.Label",
-                "$lblDest.Text = \"Destination:\"",
-                "$lblDest.Size = New-Object System.Drawing.Size(80,23)",
-                "$lblDest.Location = New-Object System.Drawing.Point(10,60)",
-                "$lblDest.TextAlign = \"MiddleLeft\"",
-                "$form.Controls.Add($lblDest)",
-                "",
-                "# --- Destination Textbox ---",
-                "$txtDest = New-Object System.Windows.Forms.TextBox",
-                "$txtDest.Location = New-Object System.Drawing.Point(90,60)",
-                "$txtDest.Size = New-Object System.Drawing.Size(400,23)",
-                "$txtDest.Anchor = \"Top,Left,Right\"",
-                "$txtDest.AutoCompleteMode = \"SuggestAppend\"",
-                "$txtDest.AutoCompleteSource = \"FileSystemDirectories\"",
-                "$form.Controls.Add($txtDest)",
-                "",
-                "# --- Browse Destination ---",
-                "$btnBrowseDest = New-Object System.Windows.Forms.Button",
-                "$btnBrowseDest.Text = \"Browse\"",
-                "$btnBrowseDest.Size = New-Object System.Drawing.Size(75,23)",
-                "$btnBrowseDest.Location = New-Object System.Drawing.Point(500,60)",
-                "$btnBrowseDest.Anchor = \"Top,Right\"",
-                "$btnBrowseDest.Add_Click({",
-                "    $folder = New-Object System.Windows.Forms.FolderBrowserDialog",
-                "    if ($folder.ShowDialog() -eq \"OK\") {",
-                "        $txtDest.Text = $folder.SelectedPath",
-                "    }",
-                "})",
-                "$form.Controls.Add($btnBrowseDest)",
-                "",
-                "# --- Checkbox ---",
-                "$chkDeep = New-Object System.Windows.Forms.CheckBox",
-                "$chkDeep.Text = \"Deep Expand CAB Payloads\"",
-                "$chkDeep.Location = New-Object System.Drawing.Point(90,95)",
-                "$chkDeep.AutoSize = $true",
-                "$form.Controls.Add($chkDeep)",
-                "",
-                "# --- Expand Button ---",
-                "$btnExpand = New-Object System.Windows.Forms.Button",
-                "$btnExpand.Text = \"Expand MSU\"",
-                "$btnExpand.Size = New-Object System.Drawing.Size(130,30)",
-                "$btnExpand.Location = New-Object System.Drawing.Point(245,120)",
-                "$btnExpand.Anchor = \"Top\"",
-                "$form.Controls.Add($btnExpand)",
-                "",
-                "# --- Progress Bar ---",
-                "$progress = New-Object System.Windows.Forms.ProgressBar",
-                "$progress.Location = New-Object System.Drawing.Point(10,160)",
-                "$progress.Size = New-Object System.Drawing.Size(580,20)",
-                "$progress.Anchor = \"Top,Left,Right\"",
-                "$form.Controls.Add($progress)",
-                "",
-                "# --- Log Box ---",
-                "$txtLog = New-Object System.Windows.Forms.TextBox",
-                "$txtLog.Multiline = $true",
-                "$txtLog.ReadOnly = $true",
-                "$txtLog.WordWrap = $false",
-                "$txtLog.ScrollBars = \"Vertical\"",
-                "$txtLog.Location = New-Object System.Drawing.Point(10,190)",
-                "$txtLog.Size = New-Object System.Drawing.Size(580,220)",
-                "$txtLog.Anchor = \"Top,Bottom,Left,Right\"",
-                "$form.Controls.Add($txtLog)",
-                "",
-                "# --- Logging ---",
-                "function Write-Log {",
-                "    param([string]$msg)",
-                "    $timestamp = (Get-Date).ToString(\"yyyy-MM-dd HH:mm:ss\")",
-                "    $txtLog.AppendText(\"[$timestamp] $msg`r`n\")",
-                "    $txtLog.SelectionStart = $txtLog.TextLength",
-                "    $txtLog.ScrollToCaret()",
-                "    [System.Windows.Forms.Application]::DoEvents()",
-                "}",
-                "",
-                "# --- Responsive process runner ---",
-                "function Invoke-ExpandProcess {",
-                "    param($sourcePath, $outputFolder)",
-                "",
-                "    $expandExe = [System.IO.Path]::Combine([Environment]::SystemDirectory, \"expand.exe\")",
-                "    $process = Start-Process -FilePath $expandExe -ArgumentList ('\"{0}\" -F:* \"{1}\"' -f $sourcePath, $outputFolder) -NoNewWindow -PassThru",
-                "",
-                "    while (!$process.HasExited) {",
-                "        [System.Windows.Forms.Application]::DoEvents()",
-                "        Start-Sleep -Milliseconds 100",
-                "    }",
-                "",
-                "    $exitCode = $process.ExitCode",
-                "    $process.Dispose()",
-                "    if ($exitCode -ne 0) { throw \"expand.exe failed with exit code $exitCode\" }",
-                "}",
-                "",
-                "# --- Expand CAB ---",
-                "function Expand-CAB {",
-                "    param($cabPath, $outputFolder)",
-                "",
-                "    if (!(Test-Path -LiteralPath $outputFolder -PathType Container)) {",
-                "        [System.IO.Directory]::CreateDirectory($outputFolder) | Out-Null",
-                "    }",
-                "",
-                "    Write-Log \"Expanding CAB: $cabPath\"",
-                "",
-                "    Invoke-ExpandProcess $cabPath $outputFolder",
-                "}",
-                "",
-                "# --- Expand Logic ---",
-                "$btnExpand.Add_Click({",
-                "    $msu = $txtMSU.Text",
-                "    $dest = $txtDest.Text",
-                "    $deep = $chkDeep.Checked",
-                "",
-                "    $btnExpand.Enabled = $false",
-                "    $txtMSU.Enabled = $false",
-                "    $txtDest.Enabled = $false",
-                "    $btnBrowseMSU.Enabled = $false",
-                "    $btnBrowseDest.Enabled = $false",
-                "    $chkDeep.Enabled = $false",
-                "    [System.Windows.Forms.Application]::DoEvents()",
-                "",
-                "    try {",
-                "        $msu = $msu.Trim()",
-                "        $dest = $dest.Trim()",
-                "",
-                "        if ([string]::IsNullOrWhiteSpace($msu) -or !(Test-Path -LiteralPath $msu -PathType Leaf)) {",
-                "            throw \"Select an existing MSU file.\"",
-                "        }",
-                "",
-                "        if ([System.IO.Path]::GetExtension($msu) -ine \".msu\") {",
-                "            throw \"The selected source must have an .msu extension.\"",
-                "        }",
-                "",
-                "        if ([string]::IsNullOrWhiteSpace($dest)) {",
-                "            throw \"Select a destination folder.\"",
-                "        }",
-                "",
-                "        if (Test-Path -LiteralPath $dest) {",
-                "            if (!(Test-Path -LiteralPath $dest -PathType Container)) {",
-                "                throw \"The destination path is not a folder.\"",
-                "            }",
-                "        } else {",
-                "            [System.IO.Directory]::CreateDirectory($dest) | Out-Null",
-                "            Write-Log \"Created destination folder\"",
-                "        }",
-                "",
-                "        $dest = [System.IO.Path]::GetFullPath($dest)",
-                "        $cabOutputRoot = Join-Path $dest \"CAB_Extracted\"",
-                "        $cabOutputPrefix = $cabOutputRoot.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar",
-                "        $destinationPrefix = $dest.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar",
-                "        $cabStateBefore = @{}",
-                "",
-                "        if ($deep) {",
-                "            Get-ChildItem -LiteralPath $dest -Filter *.cab -File -Recurse -ErrorAction Stop |",
-                "                Where-Object { !$_.FullName.StartsWith($cabOutputPrefix, [System.StringComparison]::OrdinalIgnoreCase) } |",
-                "                ForEach-Object { $cabStateBefore[$_.FullName] = \"$($_.Length):$($_.LastWriteTimeUtc.Ticks)\" }",
-                "        }",
-                "",
-                "        Write-Log \"Starting MSU expansion...\"",
-                "        $progress.Value = 10",
-                "        [System.Windows.Forms.Application]::DoEvents()",
-                "",
-                "        Invoke-ExpandProcess $msu $dest",
-                "",
-                "        Write-Log \"MSU expanded\"",
-                "        $progress.Value = 40",
-                "        [System.Windows.Forms.Application]::DoEvents()",
-                "",
-                "        if ($deep) {",
-                "            $cabFiles = @(Get-ChildItem -LiteralPath $dest -Filter *.cab -File -Recurse -ErrorAction Stop | Where-Object {",
-                "                !$_.FullName.StartsWith($cabOutputPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and",
-                "                (!$cabStateBefore.ContainsKey($_.FullName) -or $cabStateBefore[$_.FullName] -ne \"$($_.Length):$($_.LastWriteTimeUtc.Ticks)\")",
-                "            })",
-                "            $total = $cabFiles.Count",
-                "            $count = 0",
-                "",
-                "            foreach ($cab in $cabFiles) {",
-                "                $count++",
-                "                $relativeCabPath = $cab.FullName.Substring($destinationPrefix.Length)",
-                "                $relativeOutputPath = [System.IO.Path]::ChangeExtension($relativeCabPath, $null)",
-                "                $sub = Join-Path $cabOutputRoot $relativeOutputPath",
-                "                Expand-CAB $cab.FullName $sub",
-                "",
-                "                if ($total -gt 0) {",
-                "                    $progress.Value = 40 + [int](($count / $total) * 50)",
-                "                }",
-                "            }",
-                "        }",
-                "",
-                "        $progress.Value = 100",
-                "        Write-Log \"Completed successfully\"",
-                "    }",
-                "    catch {",
-                "        Write-Log \"ERROR: $_\"",
-                "        $progress.Value = 0",
-                "    }",
-                "    finally {",
-                "        $btnExpand.Enabled = $true",
-                "        $txtMSU.Enabled = $true",
-                "        $txtDest.Enabled = $true",
-                "        $btnBrowseMSU.Enabled = $true",
-                "        $btnBrowseDest.Enabled = $true",
-                "        $chkDeep.Enabled = $true",
-                "    }",
-                "})",
-                "",
-                "# --- Run ---",
-                "$form.Add_FormClosing({ if (!$btnExpand.Enabled) { $_.Cancel = $true } })",
-                "$form.Add_Shown({ $form.Activate() })",
-                "[void]$form.ShowDialog()"
-            });
         }
 
         private void WriteLog(string message, Color color)

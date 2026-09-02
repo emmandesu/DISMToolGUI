@@ -11,6 +11,7 @@ namespace DismToolGui
     {
         ImageInspector,
         MountedImages,
+        MsuCabExpander,
         ComponentExport,
         WinSxsSearch,
         DriverCollector,
@@ -300,6 +301,9 @@ namespace DismToolGui
                     componentExport.PackageCreated += OnPackageCreated;
                     created = componentExport;
                     break;
+                case ToolWorkspacePage.MsuCabExpander:
+                    created = new MsuCabExpansionControl(AppendLog);
+                    break;
                 case ToolWorkspacePage.WinSxsSearch:
                     created = new WinSxsSearchControl(AppendLog);
                     break;
@@ -459,6 +463,8 @@ namespace DismToolGui
                     return "WIM / ESD Image Inspector";
                 case ToolWorkspacePage.MountedImages:
                     return "Mounted Image Manager";
+                case ToolWorkspacePage.MsuCabExpander:
+                    return "MSU / CAB Expander";
                 case ToolWorkspacePage.ComponentExport:
                     return "Component Export";
                 case ToolWorkspacePage.WinSxsSearch:

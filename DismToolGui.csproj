@@ -22,7 +22,7 @@
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
 
-Version 1.8.6-stable — Security &amp; Reliability
+Version 1.8.6-stable — Package Tools, Security &amp; Reliability
 
 Verified the application Authenticode signature against the embedded official signing certificate before startup
 Blocked unsigned, modified, and differently signed application copies with a link to the official GitHub Releases page
@@ -30,6 +30,10 @@ Preserved embedded image-tool state and synchronized busy controls when applying
 Improved light-theme menu, button, radio-button, and checkbox readability
 Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved
 Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log
+Moved MSU/CAB expansion from the command selector to Tools &gt; Package Tools
+Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls
+Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output
+Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted
 
 ---
 

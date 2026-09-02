@@ -13,11 +13,6 @@ namespace DismToolGui
         private static readonly string DisplayVersion = GetDisplayVersion();
         private readonly string dismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
         private readonly string sfcPath = Path.Combine(Environment.SystemDirectory, "sfc.exe");
-        private readonly string powershellPath = Path.Combine(
-            Environment.SystemDirectory,
-            "WindowsPowerShell",
-            "v1.0",
-            "powershell.exe");
 
         private ComboBox commandSelector;
         private RichTextBox outputBox;
@@ -46,11 +41,13 @@ namespace DismToolGui
         private ToolStripMenuItem toolsMenuItem;
         private ToolStripMenuItem themesMenuItem;
         private ToolStripMenuItem imageServicingMenuItem;
+        private ToolStripMenuItem packageToolsMenuItem;
         private ToolStripMenuItem componentToolkitMenuItem;
         private ToolStripMenuItem logsMenuItem;
         private ToolStripMenuItem advancedToolsMenuItem;
         private ToolStripMenuItem imageInspectorMenuItem;
         private ToolStripMenuItem mountedImagesMenuItem;
+        private ToolStripMenuItem msuCabExpanderMenuItem;
         private ToolStripMenuItem componentExportMenuItem;
         private ToolStripMenuItem winSxsSearchMenuItem;
         private ToolStripMenuItem driverCollectorMenuItem;
@@ -140,7 +137,6 @@ namespace DismToolGui
                 "Get Installed Packages",
                 "Remove Package",
                 "Export WIM",
-                "MSU Expander Tool",
                 "SFC - Scannow",
                 "SFC - VerifyOnly"
             });
@@ -399,6 +395,11 @@ namespace DismToolGui
                 null,
                 (s, e) => ShowToolWorkspace(ToolWorkspacePage.MountedImages));
 
+            msuCabExpanderMenuItem = new ToolStripMenuItem(
+                "MSU / CAB Expander",
+                null,
+                (s, e) => ShowToolWorkspace(ToolWorkspacePage.MsuCabExpander));
+
             componentExportMenuItem = new ToolStripMenuItem(
                 "Component Export",
                 null,
@@ -428,6 +429,9 @@ namespace DismToolGui
             imageServicingMenuItem.DropDownItems.Add(imageInspectorMenuItem);
             imageServicingMenuItem.DropDownItems.Add(mountedImagesMenuItem);
 
+            packageToolsMenuItem = new ToolStripMenuItem("Package Tools");
+            packageToolsMenuItem.DropDownItems.Add(msuCabExpanderMenuItem);
+
             componentToolkitMenuItem = new ToolStripMenuItem("Component Toolkit");
             componentToolkitMenuItem.DropDownItems.Add(componentExportMenuItem);
             componentToolkitMenuItem.DropDownItems.Add(winSxsSearchMenuItem);
@@ -448,6 +452,7 @@ namespace DismToolGui
 
             toolsMenuItem = new ToolStripMenuItem("Tools");
             toolsMenuItem.DropDownItems.Add(imageServicingMenuItem);
+            toolsMenuItem.DropDownItems.Add(packageToolsMenuItem);
             toolsMenuItem.DropDownItems.Add(componentToolkitMenuItem);
             toolsMenuItem.DropDownItems.Add(logsMenuItem);
             toolsMenuItem.DropDownItems.Add(advancedToolsMenuItem);

@@ -12,7 +12,11 @@ namespace DismToolGui
             "• Preserved embedded image-tool state and synchronized busy controls when applying themes\r\n" +
             "• Improved light-theme menu, button, radio-button, and checkbox readability\r\n" +
             "• Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved\r\n" +
-            "• Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log\r\n\r\n" +
+            "• Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log\r\n" +
+            "• Moved MSU/CAB expansion from the command selector to Tools > Package Tools\r\n" +
+            "• Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls\r\n" +
+            "• Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output\r\n" +
+            "• Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted\r\n\r\n" +
             "Version 1.8.5-stable\r\n\r\n" +
             "• Replaced the separate Light and Dark buttons with a categorized Themes menu\r\n" +
             "• Added 50 curated palettes spanning accessibility, Fluent, developer, terminal, and color styles\r\n" +
