@@ -6,6 +6,13 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.6-stable\r\n\r\n" +
+            "• Verified the application Authenticode signature against the embedded official signing certificate before startup\r\n" +
+            "• Blocked unsigned, modified, and differently signed application copies with a link to the official GitHub Releases page\r\n" +
+            "• Preserved embedded image-tool state and synchronized busy controls when applying themes\r\n" +
+            "• Improved light-theme menu, button, radio-button, and checkbox readability\r\n" +
+            "• Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved\r\n" +
+            "• Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log\r\n\r\n" +
             "Version 1.8.5-stable\r\n\r\n" +
             "• Replaced the separate Light and Dark buttons with a categorized Themes menu\r\n" +
             "• Added 50 curated palettes spanning accessibility, Fluent, developer, terminal, and color styles\r\n" +
