@@ -14,13 +14,23 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.8.6</Version>
+	<Version>1.8.6.20260902-beta</Version>
 	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
 	<PackageIcon>2.png</PackageIcon>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+Version 1.8.6.20260902-beta — MSU / CAB Expansion Test Build
+
+Published a beta build for Visual Studio synchronization and hands-on validation
+Moved MSU/CAB expansion from the command selector to Tools &gt; Package Tools
+Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls
+Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output
+Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted
+
+---
 
 Version 1.8.6-stable — Package Tools, Security &amp; Reliability
 
@@ -163,7 +173,7 @@ Renamed export destination field for clarity
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.8.6</FileVersion>
+	<FileVersion>1.8.6.902</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>

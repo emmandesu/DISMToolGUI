@@ -6,6 +6,12 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.6.20260902-beta\r\n\r\n" +
+            "• Published a beta build for Visual Studio synchronization and hands-on validation\r\n" +
+            "• Moved MSU/CAB expansion from the command selector to Tools > Package Tools\r\n" +
+            "• Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls\r\n" +
+            "• Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output\r\n" +
+            "• Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted\r\n\r\n" +
             "Version 1.8.6-stable\r\n\r\n" +
             "• Verified the application Authenticode signature against the embedded official signing certificate before startup\r\n" +
             "• Blocked unsigned, modified, and differently signed application copies with a link to the official GitHub Releases page\r\n" +

@@ -366,7 +366,9 @@ namespace DismToolGui
             if (string.IsNullOrWhiteSpace(version))
                 version = typeof(MainForm).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
-            return $"{version}-stable";
+            return version.IndexOf("-", StringComparison.Ordinal) >= 0
+                ? version
+                : $"{version}-stable";
         }
 
         private void InitializeMenu()

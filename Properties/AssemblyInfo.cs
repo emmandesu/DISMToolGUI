@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("DISM Tool GUI")]
 [assembly: AssemblyDescription("A Windows desktop utility for DISM and SFC repair, package management, WIM servicing, and maintenance operations.")]
-[assembly: AssemblyConfiguration("Release")]
+[assembly: AssemblyConfiguration("Beta")]
 
 [assembly: AssemblyCompany("Emmanuel Flores")]
 [assembly: AssemblyProduct("DISM Tool GUI")]
@@ -15,5 +15,5 @@ using System.Runtime.InteropServices;
 [assembly: Guid("d9e8a1f6-4bb3-49e2-93cb-65aa76f6c25c")]
 
 [assembly: AssemblyVersion("1.8.6.0")]
-[assembly: AssemblyFileVersion("1.8.6.0")]
-[assembly: AssemblyInformationalVersion("1.8.6")]
+[assembly: AssemblyFileVersion("1.8.6.902")]
+[assembly: AssemblyInformationalVersion("1.8.6.20260902-beta")]
