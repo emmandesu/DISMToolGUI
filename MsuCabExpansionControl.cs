@@ -116,17 +116,21 @@ namespace DismToolGui
             var previewGroup = new GroupBox
             {
                 Text = "Command Preview",
-                Dock = DockStyle.Fill,
-                AutoSize = true,
+                Dock = DockStyle.Top,
+                AutoSize = false,
+                Height = 58,
+                MinimumSize = new System.Drawing.Size(0, 58),
+                MaximumSize = new System.Drawing.Size(0, 58),
                 Padding = new Padding(8),
                 Margin = new Padding(0, 0, 0, 8)
             };
             commandPreviewBox = new TextBox
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
                 ReadOnly = true,
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new System.Drawing.Font("Consolas", 9F)
+                Font = new System.Drawing.Font("Consolas", 9F),
+                MinimumSize = new System.Drawing.Size(0, 23)
             };
             previewGroup.Controls.Add(commandPreviewBox);
 
