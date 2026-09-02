@@ -14,13 +14,22 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.8.6.20260902-beta</Version>
+	<Version>1.8.6.20260902-beta.2</Version>
 	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
 	<PackageIcon>2.png</PackageIcon>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+Version 1.8.6.20260902.2-beta — MSU / CAB Layout Test Build
+
+Published a second beta build for Visual Studio synchronization and hands-on validation
+Fixed the MSU/CAB Command Preview row overlapping the action buttons at compact window sizes
+Kept the command textbox fully visible with DPI-aware spacing above the action controls
+Retained the integrated MSU/CAB expansion workflow, shared logging, diagnostics, and cancellation
+
+---
 
 Version 1.8.6.20260902-beta — MSU / CAB Expansion Test Build
 
@@ -174,7 +183,7 @@ Renamed export destination field for clarity
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.8.6.902</FileVersion>
+	<FileVersion>1.8.6.9022</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>

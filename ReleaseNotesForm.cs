@@ -6,6 +6,11 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.6.20260902.2-beta\r\n\r\n" +
+            "• Published a second beta build for Visual Studio synchronization and hands-on validation\r\n" +
+            "• Fixed the MSU/CAB Command Preview row overlapping the action buttons at compact window sizes\r\n" +
+            "• Kept the command textbox fully visible with DPI-aware spacing above the action controls\r\n" +
+            "• Retained the integrated MSU/CAB expansion workflow, shared logging, diagnostics, and cancellation\r\n\r\n" +
             "Version 1.8.6.20260902-beta\r\n\r\n" +
             "• Published a beta build for Visual Studio synchronization and hands-on validation\r\n" +
             "• Moved MSU/CAB expansion from the command selector to Tools > Package Tools\r\n" +
