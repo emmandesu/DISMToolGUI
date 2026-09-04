@@ -1,6 +1,6 @@
 # DISM Tool GUI
 
-[![Version](https://img.shields.io/badge/version-1.8.6.20260902.2--beta-f59e0b)](https://github.com/emmandesu/DISMToolGUI/releases)
+[![Version](https://img.shields.io/badge/version-1.8.6--Stable-2ea44f)](https://github.com/emmandesu/DISMToolGUI/releases)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)
 ![Framework](https://img.shields.io/badge/framework-.NET%20Framework%204.8-512bd4)
 
@@ -10,6 +10,19 @@ DISM Tool GUI is a Windows desktop front end for common **DISM**, **System File 
 
 > [!IMPORTANT]
 > The application requests administrator privileges at startup because Windows servicing commands require elevation. Review the command preview before making changes to a system or image.
+
+## What's new in 1.8.6-Stable
+
+This stable release brings together the MSU/CAB beta-build changes and the updated application icon:
+
+- Integrated **MSU / CAB Expander** under **Tools → Package Tools**, replacing the command-dropdown entry and separate PowerShell window.
+- Direct MSU/CAB selection, optional recursive extraction into `CAB_Extracted`, shared themed logging, and cancellation that preserves partial output.
+- Real `expand.exe` exit-code diagnostics, correct single-file CAB extraction names, and support for paths containing spaces.
+- Fixed Command Preview overlap and clipping at compact window sizes with DPI-aware spacing.
+- Larger, multi-resolution application icon with a transparent background for better taskbar visibility.
+- Cleaner SFC percentage updates on the running button without progress-control noise in the log.
+
+The in-app **Release Notes** retain both beta entries and the earlier release history. Existing signature-verification and servicing safeguards remain in place.
 
 ## Highlights
 

@@ -14,13 +14,31 @@
 	<PlatformTarget>x64</PlatformTarget>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	<Title>DISM Tool GUI</Title>
-	<Version>1.8.6.20260902-beta.2</Version>
+	<Version>1.8.6</Version>
 	<Product>DISM Tool GUI</Product>
 	<Description>This GUI tool simplifies running common DISM commands. It allows you to execute system maintenance actions through a clean, guided interface with dynamic inputs and color-coded outputs.</Description>
 	<Copyright>2025 - Emmanuel Flores</Copyright>
 	<PackageIcon>2.png</PackageIcon>
 	<PackageReadmeFile>readme.md</PackageReadmeFile>
 	<PackageReleaseNotes># Release Notes - DISM Tool GUI
+
+Version 1.8.6-Stable — MSU / CAB Expansion, Layout &amp; Icon Improvements
+
+Promoted the integrated MSU/CAB expansion workflow from the beta builds to the stable release
+Moved MSU/CAB expansion from the command selector to Tools &gt; Package Tools inside the main window
+Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted without renaming source CAB files
+Fixed blank expand.exe exit-code failures and displayed real diagnostic output through the shared themed log
+Corrected single-file CAB extraction names and supported quoted paths containing spaces
+Added cancellation for package expansion while preserving partial output for inspection
+Fixed Command Preview overlap at compact window sizes with DPI-aware spacing above the action buttons
+Replaced the blue icon background with genuine transparency and enlarged the artwork across multiple icon resolutions
+Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log
+Preserved embedded image-tool state and synchronized busy controls when applying themes
+Improved light-theme menu, button, radio-button, and checkbox readability
+Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved
+Retained startup Authenticode verification against the embedded official certificate and the official-download link for rejected builds
+
+---
 
 Version 1.8.6.20260902.2-beta — MSU / CAB Layout Test Build
 
@@ -39,21 +57,6 @@ Replaced the separate PowerShell window with an integrated themed expander using
 Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output
 Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted
 Fixed the MSU/CAB Command Preview row overlapping the action buttons at compact window sizes
-
----
-
-Version 1.8.6-stable — Package Tools, Security &amp; Reliability
-
-Verified the application Authenticode signature against the embedded official signing certificate before startup
-Blocked unsigned, modified, and differently signed application copies with a link to the official GitHub Releases page
-Preserved embedded image-tool state and synchronized busy controls when applying themes
-Improved light-theme menu, button, radio-button, and checkbox readability
-Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved
-Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log
-Moved MSU/CAB expansion from the command selector to Tools &gt; Package Tools
-Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls
-Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output
-Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted
 
 ---
 
@@ -183,7 +186,8 @@ Renamed export destination field for clarity
 - Simple GUI for basic DISM tasks
 - Execute commands and view plain text output
 - Static field layout</PackageReleaseNotes>
-	<FileVersion>1.8.6.9022</FileVersion>
+	<!-- Keep the numeric Windows file revision newer than both beta builds. -->
+	<FileVersion>1.8.6.9023</FileVersion>
 	<Platforms>AnyCPU;x64</Platforms>
 	<ApplicationManifest>app.manifest</ApplicationManifest>
 	<SignAssembly>False</SignAssembly>

@@ -6,6 +6,20 @@ namespace DismToolGui
     public class ReleaseNotesForm : Form
     {
         private const string Notes =
+            "Version 1.8.6-Stable\r\n\r\n" +
+            "• Promoted the integrated MSU/CAB expansion workflow from the beta builds to the stable release\r\n" +
+            "• Moved MSU/CAB expansion from the command selector to Tools > Package Tools inside the main window\r\n" +
+            "• Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted without renaming source CAB files\r\n" +
+            "• Fixed blank expand.exe exit-code failures and displayed real diagnostic output through the shared themed log\r\n" +
+            "• Corrected single-file CAB extraction names and supported quoted paths containing spaces\r\n" +
+            "• Added cancellation for package expansion while preserving partial output for inspection\r\n" +
+            "• Fixed Command Preview overlap at compact window sizes with DPI-aware spacing above the action buttons\r\n" +
+            "• Replaced the blue icon background with genuine transparency and enlarged the artwork across multiple icon resolutions\r\n" +
+            "• Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log\r\n" +
+            "• Preserved embedded image-tool state and synchronized busy controls when applying themes\r\n" +
+            "• Improved light-theme menu, button, radio-button, and checkbox readability\r\n" +
+            "• Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved\r\n" +
+            "• Retained startup Authenticode verification against the embedded official certificate and the official-download link for rejected builds\r\n\r\n" +
             "Version 1.8.6.20260902.2-beta\r\n\r\n" +
             "• Published a second beta build for Visual Studio synchronization and hands-on validation\r\n" +
             "• Fixed the MSU/CAB Command Preview row overlapping the action buttons at compact window sizes\r\n" +
@@ -18,17 +32,6 @@ namespace DismToolGui
             "• Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output\r\n" +
             "• Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted\r\n" +
             "• Fixed the MSU/CAB Command Preview row overlapping the action buttons at compact window sizes\r\n\r\n" +
-            "Version 1.8.6-stable\r\n\r\n" +
-            "• Verified the application Authenticode signature against the embedded official signing certificate before startup\r\n" +
-            "• Blocked unsigned, modified, and differently signed application copies with a link to the official GitHub Releases page\r\n" +
-            "• Preserved embedded image-tool state and synchronized busy controls when applying themes\r\n" +
-            "• Improved light-theme menu, button, radio-button, and checkbox readability\r\n" +
-            "• Tracked registry hives that finish loading during cancellation and warned when theme preferences cannot be saved\r\n" +
-            "• Parsed SFC console progress sequences and showed percentage updates on the running button without adding progress noise to the log\r\n" +
-            "• Moved MSU/CAB expansion from the command selector to Tools > Package Tools\r\n" +
-            "• Replaced the separate PowerShell window with an integrated themed expander using the shared log and cancellation controls\r\n" +
-            "• Fixed blank expand.exe exit-code failures by using the tracked process runner and displaying real diagnostic output\r\n" +
-            "• Added direct MSU/CAB input and bounded recursive nested-CAB extraction into CAB_Extracted\r\n\r\n" +
             "Version 1.8.5-stable\r\n\r\n" +
             "• Replaced the separate Light and Dark buttons with a categorized Themes menu\r\n" +
             "• Added 50 curated palettes spanning accessibility, Fluent, developer, terminal, and color styles\r\n" +
